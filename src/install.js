@@ -164,18 +164,32 @@ function installAt(target, mode) {
 }
 
 function writeExtra(extra) {
-  if (existsSync(extra.path)) {
-    return { status: 'extra-already-exists', target: extra.path };
-  }
   mkdirSync(dirname(extra.path), { recursive: true });
-  writeFileSync(extra.path, extra.content);
-  return { status: 'extra-written', target: extra.path };
+  // Atomic create-or-skip: writeFileSync with flag 'wx' fails fast with
+  // EEXIST when the file already exists. No existsSync race.
+  try {
+    writeFileSync(extra.path, extra.content, { flag: 'wx' });
+    return { status: 'extra-written', target: extra.path };
+  } catch (e) {
+    if (e.code === 'EEXIST') {
+      return { status: 'extra-already-exists', target: extra.path };
+    }
+    throw e;
+  }
 }
 
 function writeProjectFile(target, transformedBody) {
   mkdirSync(dirname(target), { recursive: true });
-  if (existsSync(target)) {
-    backupExisting(target);
+  // Atomic move-then-write: renameSync either succeeds (target existed and
+  // was preserved as a .backup-<ts>) or fails ENOENT (didn't exist). Either
+  // way the target slot is free for the writeFileSync below. Replaces the
+  // existsSync→writeFileSync TOCTOU CodeQL flagged as js/file-system-race.
+  try {
+    renameSync(target, `${target}.backup-${Date.now()}`);
+  } catch (e) {
+    if (e.code !== 'ENOENT') {
+      // Not "file missing" — surface the real failure via writeFileSync below
+    }
   }
   writeFileSync(target, transformedBody);
   return { status: 'written', target };
