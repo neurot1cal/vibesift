@@ -117,6 +117,54 @@
   .pending { color: var(--warning); font-size: 0.875rem; padding: 0.625rem 0.875rem; background: rgba(202,138,4,0.08); border-left: 3px solid var(--warning); border-radius: 0 4px 4px 0; }
   .problem { font-size: 1.0625rem; line-height: 1.6; }
   .constraints, .options, .tasks { padding-left: 1.25rem; }
+
+  /* Collapsible records — load-bearing for the .md-overload pitch.
+     Closed by default. Summary line shows first sentence; click to expand. */
+  details.record {
+    margin: 0.125rem 0;
+  }
+  details.record > summary {
+    cursor: pointer;
+    list-style: none;
+    color: var(--text-muted);
+    padding: 0.125rem 0 0.125rem 0.875rem;
+    position: relative;
+    border-radius: 3px;
+    transition: color 120ms;
+  }
+  details.record > summary::-webkit-details-marker { display: none; }
+  details.record > summary::before {
+    content: "›";
+    position: absolute;
+    left: 0;
+    top: 0.0625rem;
+    color: var(--text-faint);
+    font-family: ui-monospace, monospace;
+    font-weight: 600;
+    transition: transform 150ms ease, color 150ms ease;
+    transform-origin: 0.4em 0.5em;
+    display: inline-block;
+  }
+  details.record[open] > summary::before {
+    transform: rotate(90deg);
+    color: var(--accent);
+  }
+  details.record > summary:hover { color: var(--text); }
+  details.record > summary:hover::before { color: var(--accent); }
+  details.record > .record-body {
+    margin-top: 0.375rem;
+    padding: 0.625rem 0.875rem 0.625rem 1rem;
+    background: var(--surface-2);
+    border-left: 2px solid var(--accent-deep);
+    border-radius: 0 4px 4px 0;
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+  .record-text { color: var(--text-muted); }
+  .problem details.record > .record-body { font-size: 1rem; }
+
   .decision {
     margin-top: 1.5rem;
     padding: 0.875rem 1rem;
@@ -193,7 +241,7 @@
     <span class="badge badge-active">Shipping</span>
     <span><a href="https://github.com/neurot1cal/vibesift">github.com/neurot1cal/vibesift</a></span>
     <span>branch: <code>feat/vibesift-com-landing</code></span>
-    <span class="meta">updated 2026-05-09 19:10 UTC</span>
+    <span class="meta">updated 2026-05-09 19:18 UTC</span>
   </div>
 </header>
 <nav><a href="#scope" class="nav-item nav-done">Scope</a><a href="#sift" class="nav-item nav-done">Sift</a><a href="#ship" class="nav-item nav-active">Ship</a></nav>
@@ -202,9 +250,9 @@
     <section id="scope" class="phase">
       <h2>Scope</h2>
       <h3>Problem</h3>
-      <p class="problem">docs/index.html is the bootstrap placeholder. First-time visitors at vibesift.com see &#39;No sessions yet&#39; and zero context about the project — no description, no Scope→Sift→Ship explainer, no link to the GitHub repo, no list of actual sessions. The placeholder shipped because v0.1 used the bootstrap template as a stub; the landing page is now its own feature.</p>
+      <div class="problem"><details class="record"><summary>docs/index.html is the bootstrap placeholder.</summary><div class="record-body">docs/index.html is the bootstrap placeholder. First-time visitors at vibesift.com see &#39;No sessions yet&#39; and zero context about the project — no description, no Scope→Sift→Ship explainer, no link to the GitHub repo, no list of actual sessions. The placeholder shipped because v0.1 used the bootstrap template as a stub; the landing page is now its own feature.</div></details></div>
       <h3>Constraints</h3>
-      <ul class="constraints"><li>Static HTML at docs/index.html, no build step or framework — matches the zero-runtime-deps philosophy of the rest of the project.</li><li>First-30-seconds test: a visitor must learn what vibesift is, what the three verbs (Scope, Sift, Ship) mean, and where to find sessions, without scrolling past the fold on a phone.</li><li>Must list actual sessions present in docs/sessions/, not the placeholder &#39;No sessions yet&#39; string. Auto-generation can be v0.2; for now the list can be hand-maintained alongside the canonical dogfood session.</li><li>Must link to the GitHub repo (neurot1cal/vibesift), npm package (when published), and the canonical dogfood session at /sessions/v0-1-launch/.</li><li>Must match the existing dark/light theme variables already defined in src/template.js so the landing and the session pages feel like one product, not two sites.</li><li>Must NOT be clobbered by &#39;vibesift bootstrap&#39; — verified that cli.js:304 uses {flag:&#39;wx&#39;} so existing index.html is preserved. Don&#39;t regress that guarantee.</li></ul>
+      <ul class="constraints"><li><details class="record"><summary>Static HTML at docs/index.html, no build step or framework — matches the zero…</summary><div class="record-body">Static HTML at docs/index.html, no build step or framework — matches the zero-runtime-deps philosophy of the rest of the project.</div></details></li><li><details class="record"><summary>First-30-seconds test: a visitor must learn what vibesift is, what the three …</summary><div class="record-body">First-30-seconds test: a visitor must learn what vibesift is, what the three verbs (Scope, Sift, Ship) mean, and where to find sessions, without scrolling past the fold on a phone.</div></details></li><li><details class="record"><summary>Must list actual sessions present in docs/sessions/, not the placeholder &#39;No …</summary><div class="record-body">Must list actual sessions present in docs/sessions/, not the placeholder &#39;No sessions yet&#39; string. Auto-generation can be v0.2; for now the list can be hand-maintained alongside the canonical dogfood session.</div></details></li><li><details class="record"><summary>Must link to the GitHub repo (neurot1cal/vibesift), npm package (when publish…</summary><div class="record-body">Must link to the GitHub repo (neurot1cal/vibesift), npm package (when published), and the canonical dogfood session at /sessions/v0-1-launch/.</div></details></li><li><details class="record"><summary>Must match the existing dark/light theme variables already defined in src/tem…</summary><div class="record-body">Must match the existing dark/light theme variables already defined in src/template.js so the landing and the session pages feel like one product, not two sites.</div></details></li><li><details class="record"><summary>Must NOT be clobbered by &#39;vibesift bootstrap&#39; — verified that cli.js:304 uses…</summary><div class="record-body">Must NOT be clobbered by &#39;vibesift bootstrap&#39; — verified that cli.js:304 uses {flag:&#39;wx&#39;} so existing index.html is preserved. Don&#39;t regress that guarantee.</div></details></li></ul>
       <div class="decision">
          <span class="decision-label">Decision</span>
          <p>Ship a hand-written static landing at docs/index.html with a hero, a three-verb explainer (Scope, Sift, Ship — what + when), a sessions list seeded with the dogfood session, and a footer with repo + license links. Defer auto-generated session listing to a v0.2 &#39;vibesift index&#39; command. Keep the page under 200 lines of HTML+CSS — this is a status broadcaster, not a product site.</p>
@@ -215,11 +263,11 @@
     <section id="sift" class="phase">
       <h2>Sift</h2>
       <h3>Options considered</h3>
-      <ul class="options"><li>Hand-written static HTML at docs/index.html with a hardcoded sessions list. Fast to ship, zero runtime cost, matches the project&#39;s no-build philosophy. Cost: every new session requires a one-line edit to the index. Acceptable while session count is small.</li><li>Add a &#39;vibesift index&#39; command that scans docs/sessions/ and regenerates docs/index.html from a template every time a session changes phase. Single source of truth, no manual maintenance, but adds a code path and a template to maintain. Better fit once there are 5+ sessions.</li><li>Client-side: ship a thin index.html with JS that fetches a manifest.json (auto-generated by a sister command) and renders the list at page load. Rejected — adds runtime JS to a project that brags about zero deps for a problem that has a static-time solution.</li></ul>
+      <ul class="options"><li><details class="record"><summary>Hand-written static HTML at docs/index.html with a hardcoded sessions list.</summary><div class="record-body">Hand-written static HTML at docs/index.html with a hardcoded sessions list. Fast to ship, zero runtime cost, matches the project&#39;s no-build philosophy. Cost: every new session requires a one-line edit to the index. Acceptable while session count is small.</div></details></li><li><details class="record"><summary>Add a &#39;vibesift index&#39; command that scans docs/sessions/ and regenerates docs…</summary><div class="record-body">Add a &#39;vibesift index&#39; command that scans docs/sessions/ and regenerates docs/index.html from a template every time a session changes phase. Single source of truth, no manual maintenance, but adds a code path and a template to maintain. Better fit once there are 5+ sessions.</div></details></li><li><details class="record"><summary>Client-side: ship a thin index.html with JS that fetches a manifest.json (aut…</summary><div class="record-body">Client-side: ship a thin index.html with JS that fetches a manifest.json (auto-generated by a sister command) and renders the list at page load. Rejected — adds runtime JS to a project that brags about zero deps for a problem that has a static-time solution.</div></details></li></ul>
       <div class="decision">
          <span class="decision-label">Chose</span>
          <p>Option A. Hand-written static landing at docs/index.html. Auto-generation deferred to v0.2 with explicit queue note in CHANGELOG.</p>
-         <p class="rationale">Option A for v0.1. Ship the hand-written landing now; the sessions list has exactly one entry today and adding the second entry is a one-line patch. Option B is queued as a v0.2 task — once the project has 5+ sessions, the maintenance cost of A flips and we add a &#39;vibesift index&#39; command. Option C is rejected: client-side rendering for a problem solvable at write-time violates the zero-runtime-deps brand promise.</p>
+         <div class="rationale"><details class="record"><summary>Option A for v0.1.</summary><div class="record-body">Option A for v0.1. Ship the hand-written landing now; the sessions list has exactly one entry today and adding the second entry is a one-line patch. Option B is queued as a v0.2 task — once the project has 5+ sessions, the maintenance cost of A flips and we add a &#39;vibesift index&#39; command. Option C is rejected: client-side rendering for a problem solvable at write-time violates the zero-runtime-deps brand promise.</div></details></div>
          <span class="decision-time">2026-05-09 19:02 UTC</span>
        </div>
     </section>
@@ -286,7 +334,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "ship",
   "createdAt": 1778353301743,
-  "updatedAt": 1778353848125,
+  "updatedAt": 1778354334795,
   "scope": {
     "problem": "docs/index.html is the bootstrap placeholder. First-time visitors at vibesift.com see 'No sessions yet' and zero context about the project — no description, no Scope→Sift→Ship explainer, no link to the GitHub repo, no list of actual sessions. The placeholder shipped because v0.1 used the bootstrap template as a stub; the landing page is now its own feature.",
     "constraints": [
