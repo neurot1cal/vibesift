@@ -2,11 +2,17 @@
 // at-rest in git, ready for GH Pages to serve. Best-effort: if not in a
 // repo, or if there's nothing to commit, fall through silently.
 
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
+// Pass git args as an array, not a string, so they're never shell-parsed.
+// CodeQL js/indirect-command-line-injection rule fired on the previous
+// `execSync(\`git ${args}\`)` shape because user-controlled paths landed
+// in a string interpolated into a shell command. execFileSync with a
+// literal argv array sends the bytes to git verbatim — no shell meta.
 function tryGit(args, cwd) {
+  const argv = Array.isArray(args) ? args : args.split(' ').filter(Boolean);
   try {
-    return execSync(`git ${args}`, { cwd, stdio: ['ignore', 'pipe', 'ignore'] })
+    return execFileSync('git', argv, { cwd, stdio: ['ignore', 'pipe', 'ignore'] })
       .toString().trim();
   } catch {
     return null;
@@ -14,15 +20,15 @@ function tryGit(args, cwd) {
 }
 
 export function repoRoot(cwd = process.cwd()) {
-  return tryGit('rev-parse --show-toplevel', cwd);
+  return tryGit(['rev-parse', '--show-toplevel'], cwd);
 }
 
 export function currentBranch(cwd = process.cwd()) {
-  return tryGit('rev-parse --abbrev-ref HEAD', cwd) || '';
+  return tryGit(['rev-parse', '--abbrev-ref', 'HEAD'], cwd) || '';
 }
 
 export function originUrl(cwd = process.cwd()) {
-  const raw = tryGit('config --get remote.origin.url', cwd);
+  const raw = tryGit(['config', '--get', 'remote.origin.url'], cwd);
   if (!raw) return '';
   // Normalize git@github.com:owner/repo.git → https://github.com/owner/repo
   const ssh = raw.match(/^git@([^:]+):(.+?)(\.git)?$/);
@@ -35,20 +41,19 @@ export function autoCommit({ cwd = process.cwd(), paths, message }) {
   if (!root) return { ok: false, reason: 'not a git repo' };
   for (const p of paths) {
     try {
-      execSync(`git add ${JSON.stringify(p)}`, { cwd: root, stdio: 'ignore' });
+      // execFileSync — path goes to git as a literal argv entry, never
+      // through a shell. Eliminates the indirect command-injection sink.
+      execFileSync('git', ['add', '--', p], { cwd: root, stdio: 'ignore' });
     } catch {
       return { ok: false, reason: `git add failed for ${p}` };
     }
   }
   // Check if anything is actually staged.
-  const staged = tryGit('diff --cached --name-only', root);
+  const staged = tryGit(['diff', '--cached', '--name-only'], root);
   if (!staged) return { ok: true, committed: false, reason: 'nothing to commit' };
   try {
-    execSync(`git commit -m ${JSON.stringify(message)}`, {
-      cwd: root,
-      stdio: 'ignore',
-    });
-    return { ok: true, committed: true, sha: tryGit('rev-parse HEAD', root) };
+    execFileSync('git', ['commit', '-m', message], { cwd: root, stdio: 'ignore' });
+    return { ok: true, committed: true, sha: tryGit(['rev-parse', 'HEAD'], root) };
   } catch {
     return { ok: false, reason: 'git commit failed' };
   }

@@ -3,7 +3,12 @@
 // reads/mutates/writes it back. No sidecar files. The page can stand alone
 // (open in a browser, view source, see everything).
 
-const STATE_RE = /<script type="application\/json" id="vibesift-state">([\s\S]*?)<\/script>/;
+// String-based delimiters instead of a regex with `[\s\S]*?`. CodeQL flagged
+// the previous `/<script…>([\s\S]*?)<\/script>/` shape as polynomial-redos
+// because the lazy quantifier can backtrack on adversarial input. indexOf
+// is linear-time, has no backtracking, and is faster on the happy path too.
+const STATE_OPEN = '<script type="application/json" id="vibesift-state">';
+const STATE_CLOSE = '</script>';
 
 export const PHASES = ['scope', 'sift', 'ship'];
 
@@ -40,9 +45,12 @@ export function emptyState({ slug, title, problem = '', branch = '', repo = '' }
 }
 
 export function parseState(html) {
-  const m = html.match(STATE_RE);
-  if (!m) throw new Error('vibesift state block not found in HTML');
-  return JSON.parse(m[1]);
+  const start = html.indexOf(STATE_OPEN);
+  if (start < 0) throw new Error('vibesift state block not found in HTML');
+  const contentStart = start + STATE_OPEN.length;
+  const end = html.indexOf(STATE_CLOSE, contentStart);
+  if (end < 0) throw new Error('vibesift state block unterminated');
+  return JSON.parse(html.slice(contentStart, end));
 }
 
 export function advancePhase(state) {
