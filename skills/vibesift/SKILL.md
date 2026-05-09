@@ -1,6 +1,6 @@
 ---
 name: vibesift
-description: Use when the user wants to scope a feature, sift through approaches, or ship a session — produces a static HTML status page in docs/sessions/ that broadcasts the current phase and decision history. The HTML page is the artifact; the terminal is the driver. Trigger when user says "scope", "sift", "ship", "start a session", or "vibesift".
+description: Drive a vibesift session — produces a static HTML status page in docs/sessions/ that broadcasts the current phase and decision history. The HTML page is the artifact, the terminal is the driver. TRIGGER when the user explicitly asks to start, advance, or close a vibesift session — phrases like "vibesift this", "/scope", "/sift", "/ship", "start a new vibesift session", "advance the session", "ship this session". SKIP for conversational uses of "scope" / "sift" / "ship" that aren't session commands ("scope creep", "out of scope", "what's the scope of this PR", bare "ship it" with no session context, "sift through these logs").
 ---
 
 # vibesift — Scope, Sift, Ship
@@ -12,17 +12,38 @@ the only place changes happen.
 
 ## When to use
 
-Trigger when the user wants to start, advance, or close a session of work.
-Phrases that activate vibesift:
+Trigger when the user wants to start, advance, or close a session of work in
+the vibesift sense — meaning they want a tracked, three-phase artifact in
+`docs/sessions/<slug>/index.html`. Trigger phrases:
 
-- "let's scope this"
-- "sift through the options"
-- "ship this"
-- "start a new session"
-- "/scope", "/sift", "/ship"
+- "vibesift this" / "vibesift the X feature"
+- "start a vibesift session" / "new vibesift session"
+- "/scope", "/sift", "/ship" as explicit slash commands
+- "advance the session" / "advance to sift" / "advance to ship"
+- "let's scope this as a vibesift session"
+- "ship the vibesift session"
 
-Skip when the user is asking a one-shot question or doing pure exploration —
-vibesift is for work that has a defined start and end.
+## Do NOT trigger when
+
+These are conversational uses of the same words and are NOT vibesift
+sessions. Do not start a session for any of these:
+
+- **"scope creep" / "out of scope" / "in scope"** — these are status
+  observations about a PR, not session commands.
+- **"what's the scope of this PR" / "what's the scope of the change"** —
+  analytic question about a diff, not a request to start a session.
+- **"sift through these logs" / "sift through the options"** without prior
+  vibesift framing — generic verbs, not session commands.
+- **"ship it" / "ship this PR" / "ready to ship"** — generic encouragement
+  / merge-readiness, not a `vibesift ship` invocation.
+- **"let me scope out this approach"** as casual brainstorming — vibesift
+  is for work that has a defined start and end, not exploration.
+- **One-shot questions or pure exploration** — ask a question, not a
+  session.
+
+When in doubt, ask the user "do you want me to track this as a vibesift
+session?" rather than starting one unprompted. Sessions auto-commit, so a
+false-positive trigger creates spurious commits the user has to clean up.
 
 ## The three phases
 
@@ -56,7 +77,8 @@ Slugs are lowercase, hyphenated, max 80 chars (`/^[a-z0-9][a-z0-9-]{0,80}$/`).
 
 ## How to drive the flow
 
-When the user says "scope this":
+When the user says something that triggers vibesift (per the trigger list
+above):
 
 1. If `docs/sessions/` doesn't exist in the repo, run `vibesift bootstrap` first.
 2. Pick a slug from the user's framing (e.g., "block-comment-search" →

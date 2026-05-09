@@ -46,8 +46,8 @@ vibesift is the smallest possible thing that does this:
 - Inline CSS, no CDN, no JS framework
 - State persisted as JSON inside the HTML itself (single source of truth)
 - Auto-commits every change to the current branch
-- One canonical skill markdown that installs into Claude Code, Codex,
-  OpenCode, Cursor Agent, and Gemini CLI
+- One canonical skill markdown that installs globally into Claude Code,
+  Codex, OpenCode, and Gemini CLI; Cursor via a per-project rule file
 
 ## Install
 
@@ -126,17 +126,37 @@ The CLI is the source of truth; the skill is a thin wrapper that tells your
 agent when to call it.
 
 ```bash
-vibesift install                  # detect + symlink into every harness
-vibesift harnesses                # list which harnesses are detected
+vibesift install                  # detect + symlink into every global harness
+vibesift install --project        # drop a per-project rule file (Cursor)
+vibesift harnesses                # list every supported harness
 ```
 
-| Harness        | Target                                          |
-| -------------- | ----------------------------------------------- |
-| Claude Code    | `~/.claude/skills/vibesift/SKILL.md`            |
-| Codex          | `~/.codex/skills/vibesift/SKILL.md`             |
-| OpenCode       | `~/.opencode/agents/vibesift/SKILL.md`          |
-| Cursor Agent   | `~/.cursor/skills/vibesift/SKILL.md`            |
-| Gemini CLI     | `~/.gemini/extensions/vibesift/SKILL.md`        |
+### Verified globally (one install, all repos)
+
+| Harness        | On disk                                          | Status |
+| -------------- | ------------------------------------------------ | ------ |
+| Claude Code    | `~/.claude/skills/vibesift/SKILL.md`             | verified |
+| Codex          | `~/.agents/skills/vibesift/SKILL.md`             | verified — uses the open-agent-skills standard, not `~/.codex/` |
+| OpenCode       | `~/.config/opencode/skills/vibesift/SKILL.md`    | verified — also auto-reads `~/.claude/skills/` and `~/.agents/skills/`, so a Claude Code or Codex install lights this one up too |
+| Gemini CLI     | `~/.gemini/extensions/vibesift/{gemini-extension.json, skills/vibesift/SKILL.md}` | verified — installer writes both the manifest and the bundled skill |
+
+### Per-project (Cursor)
+
+Cursor has no global filesystem-level skills — User Rules in Cursor are
+plain-text settings, and Project Rules live in `.cursor/rules/<name>.mdc`
+inside each repo. Run `vibesift install --project` from inside a repo to
+drop `.cursor/rules/vibesift.mdc` (a `.mdc`-frontmatter rendering of the
+canonical SKILL.md). Commit the file alongside your code.
+
+| Harness        | On disk                                | Status |
+| -------------- | -------------------------------------- | ------ |
+| Cursor         | `.cursor/rules/vibesift.mdc` (per-repo) | verified — requires `vibesift install --project` |
+
+### Not yet supported
+
+Any harness without a documented skills/extension format is left out
+deliberately rather than being symlinked into a guess. PRs welcome —
+cite the relevant docs in the PR body and add a row above.
 
 Adding a new harness is one entry in `src/install.js`.
 
