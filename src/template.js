@@ -127,29 +127,87 @@ function decisionsLog(state) {
     </section>`;
 }
 
+// Brand palette — see BRAND.md for tokens. Both themes share the same
+// accent + semantic colors; only neutrals invert.
 const STYLES = `
-  :root { color-scheme: dark; }
+  :root {
+    color-scheme: dark light;
+
+    /* Accents (theme-stable) */
+    --accent: #facc15;        /* yellow-400 — pinning + hero accent */
+    --accent-deep: #ca8a04;   /* yellow-600 — outlines */
+    --positive: #22c55e;      /* green-500 — done, shipped */
+    --warning: #ca8a04;       /* yellow-600 — pending */
+
+    /* Neutrals (overridden in [data-theme="light"]) */
+    --bg: #09090b;
+    --surface: #0f0f12;
+    --surface-2: #18181b;
+    --border: #27272a;
+    --border-strong: #3f3f46;
+    --text: #fafafa;
+    --text-muted: #d4d4d8;
+    --text-dim: #a1a1aa;
+    --text-faint: #71717a;
+    --text-ghost: #52525b;
+
+    /* Semantic backgrounds */
+    --badge-active-bg: #1e3a8a;
+    --badge-active-fg: #bfdbfe;
+    --badge-shipped-bg: #14532d;
+    --badge-shipped-fg: #bbf7d0;
+
+    --decision-bg: #0a0a0a;
+  }
+  [data-theme="light"] {
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --surface-2: #f4f4f5;
+    --border: #e4e4e7;
+    --border-strong: #d4d4d8;
+    --text: #09090b;
+    --text-muted: #27272a;
+    --text-dim: #52525b;
+    --text-faint: #71717a;
+    --text-ghost: #a1a1aa;
+
+    --badge-active-bg: #dbeafe;
+    --badge-active-fg: #1e3a8a;
+    --badge-shipped-bg: #dcfce7;
+    --badge-shipped-fg: #166534;
+
+    --decision-bg: #ffffff;
+  }
   * { box-sizing: border-box; }
   body {
-    margin: 0;
-    background: #09090b;
-    color: #fafafa;
+    margin: 0 auto;
+    background: var(--bg);
+    color: var(--text);
     font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     padding: 1.5rem 1rem 4rem;
     max-width: 760px;
-    margin: 0 auto;
+    transition: background 150ms ease, color 150ms ease;
   }
-  header { border-bottom: 1px solid #27272a; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+  header { border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem; position: relative; }
+  .brand-mark {
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.15em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
   h1 { font-size: 1.5rem; margin: 0 0 0.25rem; line-height: 1.2; }
-  h2 { font-size: 1.125rem; margin-top: 2rem; margin-bottom: 0.5rem; color: #fafafa; }
-  h3 { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: #a1a1aa; margin: 1.25rem 0 0.5rem; }
-  p { margin: 0.5rem 0; color: #d4d4d8; }
-  ul, ol { padding-left: 1.25rem; color: #d4d4d8; }
+  h2 { font-size: 1.125rem; margin-top: 2rem; margin-bottom: 0.5rem; color: var(--text); }
+  h3 { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin: 1.25rem 0 0.5rem; }
+  p { margin: 0.5rem 0; color: var(--text-muted); }
+  ul, ol { padding-left: 1.25rem; color: var(--text-muted); }
   li { margin: 0.25rem 0; }
-  a { color: #fafafa; }
-  em { color: #71717a; }
-  .meta { color: #a1a1aa; font-size: 0.875rem; }
-  .meta a { color: #a1a1aa; }
+  a { color: var(--text); }
+  em { color: var(--text-faint); }
+  code { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.875em; color: var(--text-muted); background: var(--surface-2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+  .meta { color: var(--text-dim); font-size: 0.875rem; }
+  .meta a { color: var(--text-dim); }
   .meta-line { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-top: 0.5rem; }
   .badge {
     display: inline-block;
@@ -160,77 +218,118 @@ const STYLES = `
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
-  .badge-active { background: #1e3a8a; color: #bfdbfe; }
-  .badge-shipped { background: #14532d; color: #bbf7d0; }
+  .badge-active { background: var(--badge-active-bg); color: var(--badge-active-fg); }
+  .badge-shipped { background: var(--badge-shipped-bg); color: var(--badge-shipped-fg); }
   nav { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
   .nav-item {
     flex: 1;
     text-align: center;
     padding: 0.5rem 0.75rem;
-    border: 1px solid #27272a;
+    border: 1px solid var(--border);
     border-radius: 6px;
     text-decoration: none;
-    color: #a1a1aa;
+    color: var(--text-dim);
     font-size: 0.875rem;
     min-width: 100px;
   }
-  .nav-active { background: #fafafa; color: #09090b; border-color: #fafafa; font-weight: 600; }
-  .nav-done { color: #71717a; }
-  .nav-done::after { content: " ✓"; color: #4ade80; }
+  .nav-active { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 600; }
+  .nav-done { color: var(--text-faint); }
+  .nav-done::after { content: " ✓"; color: var(--positive); }
   .phase { margin-bottom: 2rem; padding-top: 0.5rem; }
-  .empty { color: #52525b; font-style: italic; font-size: 0.875rem; }
-  .pending { color: #ca8a04; font-size: 0.875rem; padding: 0.625rem 0.875rem; background: rgba(202,138,4,0.08); border-left: 3px solid #ca8a04; border-radius: 0 4px 4px 0; }
+  .empty { color: var(--text-ghost); font-style: italic; font-size: 0.875rem; }
+  .pending { color: var(--warning); font-size: 0.875rem; padding: 0.625rem 0.875rem; background: rgba(202,138,4,0.08); border-left: 3px solid var(--warning); border-radius: 0 4px 4px 0; }
   .problem { font-size: 1.0625rem; line-height: 1.6; }
   .constraints, .options, .tasks { padding-left: 1.25rem; }
   .decision {
     margin-top: 1.5rem;
     padding: 0.875rem 1rem;
-    background: #0a0a0a;
-    border: 1px solid #27272a;
-    border-left: 3px solid #fafafa;
+    background: var(--decision-bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
     border-radius: 0 6px 6px 0;
   }
   .decision-label {
     font-size: 0.6875rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #71717a;
+    color: var(--text-faint);
     font-weight: 600;
   }
-  .decision p { margin: 0.375rem 0; color: #fafafa; font-size: 1rem; }
-  .decision .rationale { color: #a1a1aa; font-size: 0.9375rem; }
-  .decision-time { font-size: 0.75rem; color: #52525b; }
+  .decision p { margin: 0.375rem 0; color: var(--text); font-size: 1rem; }
+  .decision .rationale { color: var(--text-dim); font-size: 0.9375rem; }
+  .decision-time { font-size: 0.75rem; color: var(--text-ghost); }
   .tasks { list-style: none; padding-left: 0; }
   .task-mark { display: inline-block; width: 1.25rem; font-weight: 600; }
-  .task-todo .task-mark { color: #71717a; }
-  .task-done .task-mark { color: #4ade80; }
-  .task-done .task-text { color: #71717a; text-decoration: line-through; }
+  .task-todo .task-mark { color: var(--text-faint); }
+  .task-done .task-mark { color: var(--positive); }
+  .task-done .task-text { color: var(--text-faint); text-decoration: line-through; }
   .diff-link {
     display: inline-block;
     margin-top: 0.5rem;
     padding: 0.5rem 0.875rem;
-    border: 1px solid #3f3f46;
+    border: 1px solid var(--border-strong);
     border-radius: 6px;
     text-decoration: none;
     font-size: 0.875rem;
   }
-  .shipped { color: #4ade80; font-weight: 600; margin-top: 1rem; }
-  .log { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #27272a; }
+  .shipped { color: var(--positive); font-weight: 600; margin-top: 1rem; }
+  .log { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
   .log ol { padding-left: 1.5rem; }
   .log li { margin: 0.5rem 0; font-size: 0.875rem; }
   .log-phase {
     display: inline-block;
     min-width: 4rem;
-    color: #71717a;
+    color: var(--text-faint);
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     font-weight: 600;
   }
-  .log-text { color: #d4d4d8; }
-  .log-time { display: block; color: #52525b; font-size: 0.75rem; margin-top: 0.125rem; }
-  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #27272a; color: #52525b; font-size: 0.75rem; text-align: center; }
-  footer a { color: #71717a; }
+  .log-text { color: var(--text-muted); }
+  .log-time { display: block; color: var(--text-ghost); font-size: 0.75rem; margin-top: 0.125rem; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--text-ghost); font-size: 0.75rem; text-align: center; }
+  footer a { color: var(--text-faint); }
+
+  /* Theme toggle — top-right of the page, both themes. */
+  .theme-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font: 0.75rem ui-monospace, SFMono-Regular, monospace;
+    padding: 0.375rem 0.625rem;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--text); }
+`;
+
+// Inline JS — toggle dark/light, persist choice in localStorage, respect
+// prefers-color-scheme on first load. Kept tiny on purpose; this is the
+// only JS the page ever ships.
+const THEME_SCRIPT = `
+(function(){
+  var KEY='vibesift:theme';
+  var root=document.documentElement;
+  var btn=document.getElementById('theme-toggle');
+  var saved=null;
+  try { saved = localStorage.getItem(KEY); } catch(e) {}
+  var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  var theme = saved || (prefersLight ? 'light' : 'dark');
+  apply(theme);
+  if (btn) btn.addEventListener('click', function(){
+    var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    apply(next);
+    try { localStorage.setItem(KEY, next); } catch(e) {}
+  });
+  function apply(t){
+    root.setAttribute('data-theme', t);
+    if (btn) btn.textContent = t === 'light' ? '◐ DARK' : '◑ LIGHT';
+  }
+})();
 `;
 
 export function renderHTML(state) {
@@ -263,6 +362,8 @@ export function renderHTML(state) {
 </head>
 <body>
 <header>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">◐ DARK</button>
+  <div class="brand-mark">vibesift · ${escapeHtml(state.slug)}</div>
   <h1>${escapeHtml(state.title)}</h1>
   <div class="meta-line">
     <span class="badge badge-${badge.tone}">${badge.text}</span>
@@ -282,6 +383,7 @@ ${decisionsLog(state)}
 <script type="application/json" id="vibesift-state">
 ${safeJson}
 </script>
+<script>${THEME_SCRIPT}</script>
 </body>
 </html>
 `;
