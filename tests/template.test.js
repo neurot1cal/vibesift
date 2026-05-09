@@ -69,6 +69,57 @@ test('viewport meta tag present for mobile readability', () => {
   assert.match(html, /<meta name="viewport"/);
 });
 
+test('long constraints render as collapsible <details> records', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  const longText = 'Must run on Node 20+ with no native deps. Reason: the project ships across ARM, x86, and Windows from a single tarball, and a native build step would require platform-specific binaries that npm cannot reliably distribute.';
+  addConstraint(s, longText);
+  const html = renderHTML(s);
+  assert.match(html, /<details class="record">/);
+  // Summary is the first sentence (terminator followed by whitespace).
+  assert.match(html, /<summary>Must run on Node 20\+ with no native deps\.<\/summary>/);
+  // Full text is present in the body.
+  assert.ok(html.includes(longText), 'full constraint text present in body');
+});
+
+test('short constraints render inline, not collapsed', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  addConstraint(s, 'must work offline');
+  const html = renderHTML(s);
+  // No <details> wrapper around the short text.
+  assert.match(html, /<span class="record-text">must work offline<\/span>/);
+  assert.doesNotMatch(html, /<details class="record">[^<]*<summary>must work offline/);
+});
+
+test('long options render as collapsible records', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  advancePhase(s);
+  addOption(s, 'Option B: regenerate the index from sessions on every commit. Single source of truth, but adds a code path and a template to maintain. Better fit at 5+ sessions.');
+  const html = renderHTML(s);
+  assert.match(html, /<details class="record">/);
+  assert.match(html, /<summary>Option B: regenerate the index from sessions on every commit\.<\/summary>/);
+});
+
+test('long problem statement is collapsible', () => {
+  const longProblem = 'docs/index.html is the bootstrap placeholder. First-time visitors see nothing useful, and the canonical dogfood session is not linked from the public surface.';
+  const s = emptyState({ slug: 'a', title: 'A', problem: longProblem });
+  const html = renderHTML(s);
+  assert.match(html, /<details class="record">/);
+  assert.match(html, /<summary>docs\/index\.html is the bootstrap placeholder\.<\/summary>/);
+});
+
+test('renderRecord falls back to char-truncation when no sentence boundary found', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  // Long text with no sentence terminator at all.
+  const noPeriod = 'a long single-clause constraint with absolutely no sentence terminator anywhere within the first eighty characters or even after that point';
+  addConstraint(s, noPeriod);
+  const html = renderHTML(s);
+  assert.match(html, /<details class="record">/);
+  // Falls back to 77-char slice + ellipsis. Assert prefix + ellipsis terminator
+  // rather than the exact cut-point so the test is robust to small wording changes.
+  assert.match(html, /<summary>a long single-clause constraint with absolutely no sentence terminator/);
+  assert.match(html, /…<\/summary>/);
+});
+
 test('JSON state block escapes </script> to prevent breakout', () => {
   // Regression test: user-supplied text containing the literal `</script>`
   // would break out of the JSON block and execute as HTML/JS without the

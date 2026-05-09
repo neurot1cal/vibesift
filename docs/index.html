@@ -1,20 +1,388 @@
 <!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>vibesift sessions</title>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="vibesift — one CLI, one HTML page per agent session. Scope. Sift. Ship.">
+<meta name="generator" content="vibesift">
+<title>vibesift — Scope. Sift. Ship.</title>
 <style>
-  body { background: #09090b; color: #fafafa; font: 16px/1.55 ui-sans-serif, system-ui;
-         margin: 0 auto; max-width: 760px; padding: 2rem 1rem; }
-  h1 { font-size: 1.5rem; margin: 0 0 1.5rem; }
-  ul { list-style: none; padding: 0; }
-  li { margin: 0.5rem 0; padding: 0.875rem 1rem; border: 1px solid #27272a; border-radius: 6px; }
-  a { color: #fafafa; text-decoration: none; font-weight: 600; }
-  a:hover { text-decoration: underline; }
-  .empty { color: #71717a; font-style: italic; }
-  .footer { margin-top: 3rem; color: #52525b; font-size: 0.75rem; text-align: center; }
+  :root {
+    color-scheme: dark light;
+    --accent: #facc15;
+    --accent-deep: #ca8a04;
+    --positive: #22c55e;
+    --bg: #09090b;
+    --surface: #0f0f12;
+    --surface-2: #18181b;
+    --border: #27272a;
+    --border-strong: #3f3f46;
+    --text: #fafafa;
+    --text-muted: #d4d4d8;
+    --text-dim: #a1a1aa;
+    --text-faint: #71717a;
+    --text-ghost: #52525b;
+
+    --mono: ui-monospace, "JetBrains Mono", "SF Mono", "Menlo", "Consolas", monospace;
+
+    /* SVG noise grain — pure CSS, no requests. */
+    --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.45 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+  [data-theme="light"] {
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --surface-2: #f4f4f5;
+    --border: #e4e4e7;
+    --border-strong: #d4d4d8;
+    --text: #09090b;
+    --text-muted: #27272a;
+    --text-dim: #52525b;
+    --text-faint: #71717a;
+    --text-ghost: #a1a1aa;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.6 var(--mono);
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+  /* Grain layer — overlays everything, very subtle. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: var(--grain);
+    opacity: 0.06;
+    pointer-events: none;
+    z-index: 100;
+    mix-blend-mode: overlay;
+  }
+  [data-theme="light"] body::before { opacity: 0.04; mix-blend-mode: multiply; }
+
+  .frame {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 4rem;
+  }
+
+  /* Top bar — version stamp + theme toggle */
+  .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.6875rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4rem;
+  }
+  .top-left { display: flex; gap: 1rem; align-items: center; }
+  .top-pip {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px rgba(250,204,21,0.15);
+  }
+  .theme-toggle {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font: inherit;
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    padding: 0.25rem 0.625rem;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--text); }
+
+  /* Hero */
+  .hero { margin-bottom: 5rem; }
+  .hero-prompt {
+    font-size: 0.75rem;
+    color: var(--text-faint);
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.05em;
+  }
+  .hero-prompt::before {
+    content: "$ ";
+    color: var(--accent);
+  }
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(2.25rem, 8vw, 4.25rem);
+    font-weight: 500;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    margin: 0 0 1.5rem;
+  }
+  h1 .accent { color: var(--accent); }
+  h1 .dot { color: var(--text-ghost); }
+  .hero-tag {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    max-width: 44ch;
+    margin: 0 0 1rem;
+    line-height: 1.55;
+  }
+  .hero-tag:last-of-type { margin-bottom: 2rem; }
+  .hero-tag em { color: var(--accent); font-style: normal; font-weight: 600; }
+  .hero-strike {
+    color: var(--text-ghost);
+    text-decoration: line-through;
+    text-decoration-color: var(--text-faint);
+    text-decoration-thickness: 1px;
+    margin-right: 0.625rem;
+    font-size: 0.8125rem;
+    display: inline-block;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 0.8125rem;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    text-decoration: none;
+    background: var(--surface);
+    transition: border-color 120ms;
+  }
+  .pill:hover { border-color: var(--accent); }
+  .pill.cmd::before { content: "$"; color: var(--accent); margin-right: 0.25rem; }
+  .pill.link::after { content: " ↗"; color: var(--text-faint); }
+
+  /* Section heading — left-aligned with rule */
+  .h2 {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.875rem;
+    align-items: center;
+    font-size: 0.6875rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin: 0 0 1.5rem;
+  }
+  .h2 .rule {
+    height: 1px;
+    background: var(--border);
+  }
+  .h2 .h2-num {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* Verbs — terminal list */
+  .verbs {
+    margin-bottom: 5rem;
+  }
+  .verb-row {
+    display: grid;
+    grid-template-columns: 2.25rem auto 1fr;
+    gap: 1.25rem;
+    align-items: baseline;
+    padding: 1.125rem 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .verb-row:first-of-type { border-top: 1px dashed var(--border); }
+  .verb-num {
+    color: var(--text-faint);
+    font-size: 0.75rem;
+  }
+  .verb-name {
+    font-size: 1.5rem;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    min-width: 5rem;
+  }
+  .verb-row.is-sift .verb-name { color: var(--accent); }
+  .verb-cmd {
+    font-size: 0.8125rem;
+    color: var(--text-dim);
+    text-align: right;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .verb-cmd::before { content: "$ "; color: var(--text-ghost); }
+  @media (max-width: 600px) {
+    .verb-row { grid-template-columns: 2.25rem 1fr; }
+    .verb-cmd { grid-column: 2; text-align: left; padding-top: 0.25rem; }
+  }
+
+  /* Sessions — departure board */
+  .sessions {
+    margin-bottom: 5rem;
+    border-top: 1px solid var(--border);
+  }
+  .sess-row {
+    display: grid;
+    grid-template-columns: 6.5rem 5rem 1fr;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.875rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.8125rem;
+    text-decoration: none;
+    color: var(--text);
+    transition: background 120ms, color 120ms;
+  }
+  .sess-row:hover { color: var(--accent); }
+  .sess-row:hover .sess-arrow { color: var(--accent); transform: translateX(2px); }
+  .sess-date {
+    color: var(--text-faint);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+  }
+  .sess-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--text-dim);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .sess-status::before {
+    content: "";
+    display: block;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--positive);
+  }
+  .sess-status.is-active::before { background: var(--accent); box-shadow: 0 0 0 3px rgba(250,204,21,0.18); }
+  .sess-status.is-active { color: var(--accent); }
+  .sess-title {
+    display: flex;
+    align-items: baseline;
+    gap: 0.625rem;
+  }
+  .sess-arrow {
+    color: var(--text-faint);
+    transition: transform 120ms, color 120ms;
+  }
+  @media (max-width: 600px) {
+    .sess-row { grid-template-columns: 1fr auto; gap: 0.5rem; }
+    .sess-date { grid-row: 1; grid-column: 1; }
+    .sess-status { grid-row: 1; grid-column: 2; justify-self: end; }
+    .sess-title { grid-row: 2; grid-column: 1 / -1; padding-top: 0.125rem; }
+  }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding-top: 1.5rem;
+    margin-top: 6rem;
+    color: var(--text-faint);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  footer a { color: var(--text-dim); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
 </style>
-</head><body>
-<h1>vibesift sessions</h1>
-<p class="empty">No sessions yet. Run <code>vibesift init &lt;slug&gt; --title "..."</code> to create one.</p>
-<div class="footer">read-only status pages · the terminal drives the flow</div>
-</body></html>
+</head>
+<body>
+<div class="frame">
+
+  <div class="top">
+    <div class="top-left">
+      <span class="top-pip" aria-hidden="true"></span>
+      <span>vibesift v0.1</span>
+    </div>
+    <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">◐ DARK</button>
+  </div>
+
+  <section class="hero">
+    <p class="hero-prompt">npm install -g vibesift</p>
+    <h1><span>Scope.</span><span class="dot">·</span><span class="accent">Sift.</span><span class="dot">·</span><span>Ship.</span></h1>
+    <p class="hero-tag"><span class="hero-strike">brainstorm.md</span> <span class="hero-strike">spec.md</span> <span class="hero-strike">plan.md</span> <span class="hero-strike">implementation.md</span></p>
+    <p class="hero-tag">Your agent's flow becomes <em>one</em> HTML page. Every decision a collapsible record &mdash; visible at a glance, expandable for detail.</p>
+    <div class="hero-actions">
+      <a class="pill link" href="https://github.com/neurot1cal/vibesift">github</a>
+      <a class="pill link" href="sessions/vibesift-com-landing/">see it dogfooded</a>
+    </div>
+  </section>
+
+  <section class="verbs" aria-label="Three verbs">
+    <h3 class="h2"><span class="h2-num">01</span><span class="rule"></span><span>three verbs</span></h3>
+    <div class="verb-row">
+      <span class="verb-num">01</span>
+      <span class="verb-name">scope</span>
+      <span class="verb-cmd">vibesift scope app add-constraint "…"</span>
+    </div>
+    <div class="verb-row is-sift">
+      <span class="verb-num">02</span>
+      <span class="verb-name">sift</span>
+      <span class="verb-cmd">vibesift sift app add-option "…"</span>
+    </div>
+    <div class="verb-row">
+      <span class="verb-num">03</span>
+      <span class="verb-name">ship</span>
+      <span class="verb-cmd">vibesift ship app task add "…"</span>
+    </div>
+  </section>
+
+  <section class="sessions" aria-label="Sessions">
+    <h3 class="h2"><span class="h2-num">02</span><span class="rule"></span><span>sessions</span></h3>
+    <a class="sess-row" href="sessions/vibesift-com-landing/">
+      <span class="sess-date">2026-05-09</span>
+      <span class="sess-status is-active">active · ship</span>
+      <span class="sess-title"><span>real landing for vibesift.com</span><span class="sess-arrow">→</span></span>
+    </a>
+    <a class="sess-row" href="sessions/v0-1-launch/">
+      <span class="sess-date">2026-05-09</span>
+      <span class="sess-status">shipped</span>
+      <span class="sess-title"><span>ship vibesift v0.1</span><span class="sess-arrow">→</span></span>
+    </a>
+  </section>
+
+  <footer>
+    <span>read-only · terminal drives the flow</span>
+    <span><a href="https://github.com/neurot1cal/vibesift">vibesift</a> · <a href="https://github.com/neurot1cal/bdigital-public">sibling plugins</a> · MIT / Apache-2.0</span>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  var KEY='vibesift:theme';
+  var root=document.documentElement;
+  var btn=document.getElementById('theme-toggle');
+  var saved=null;
+  try { saved = localStorage.getItem(KEY); } catch(e) {}
+  var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  var theme = saved || (prefersLight ? 'light' : 'dark');
+  apply(theme);
+  if (btn) btn.addEventListener('click', function(){
+    var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    apply(next);
+    try { localStorage.setItem(KEY, next); } catch(e) {}
+  });
+  function apply(t){
+    root.setAttribute('data-theme', t);
+    if (btn) btn.textContent = t === 'light' ? '◐ DARK' : '◑ LIGHT';
+  }
+})();
+</script>
+</body>
+</html>

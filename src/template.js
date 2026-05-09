@@ -9,6 +9,30 @@ const escapeHtml = s =>
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[c]));
 
+// Render one record (constraint, option, problem) as either a plain string
+// for short content, or a <details>/<summary> pair for longer content. The
+// summary is the first sentence (split on .!?) or the first 80 chars; the
+// body is the full text. Default state is closed — the at-a-glance read.
+// This is the load-bearing piece of vibesift's pitch: dense markdown becomes
+// scannable HTML without losing any of the underlying detail.
+function renderRecord(text) {
+  const raw = String(text || '');
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  // Short enough to leave inline.
+  if (trimmed.length <= 80) {
+    return `<span class="record-text">${escapeHtml(trimmed)}</span>`;
+  }
+  // Split into summary + body. Prefer the first sentence; fall back to a
+  // hard 80-char cut with ellipsis. The lookahead requires whitespace or
+  // end-of-input after the terminator so that file extensions like
+  // `index.html` and abbreviations don't get mistaken for sentence ends.
+  const sentenceMatch = trimmed.match(/^.{12,80}?[.!?](?=\s|$)/);
+  const summary = sentenceMatch ? sentenceMatch[0] : trimmed.slice(0, 77) + '…';
+  return `<details class="record"><summary>${escapeHtml(summary)}</summary>` +
+         `<div class="record-body">${escapeHtml(trimmed)}</div></details>`;
+}
+
 const fmtDate = ts => {
   if (!ts) return '';
   const d = new Date(ts);
@@ -42,7 +66,7 @@ function nav(state) {
 function scopeSection(state) {
   const s = state.scope;
   const constraints = s.constraints.length
-    ? `<ul class="constraints">${s.constraints.map(c => `<li>${escapeHtml(c)}</li>`).join('')}</ul>`
+    ? `<ul class="constraints">${s.constraints.map(c => `<li>${renderRecord(c)}</li>`).join('')}</ul>`
     : '<p class="empty">No constraints recorded.</p>';
   const decision = s.decision
     ? `<div class="decision">
@@ -51,11 +75,14 @@ function scopeSection(state) {
          <span class="decision-time">${fmtDate(s.decidedAt)}</span>
        </div>`
     : '<p class="pending">Pending decision.</p>';
+  const problemBlock = s.problem
+    ? `<div class="problem">${renderRecord(s.problem)}</div>`
+    : '<p class="empty">Not set.</p>';
   return `
     <section id="scope" class="phase">
       <h2>Scope</h2>
       <h3>Problem</h3>
-      <p class="problem">${s.problem ? escapeHtml(s.problem) : '<em class="empty">Not set.</em>'}</p>
+      ${problemBlock}
       <h3>Constraints</h3>
       ${constraints}
       ${decision}
@@ -65,13 +92,16 @@ function scopeSection(state) {
 function siftSection(state) {
   const s = state.sift;
   const options = s.options.length
-    ? `<ul class="options">${s.options.map(o => `<li>${escapeHtml(o.text)}</li>`).join('')}</ul>`
+    ? `<ul class="options">${s.options.map(o => `<li>${renderRecord(o.text)}</li>`).join('')}</ul>`
     : '<p class="empty">No options yet.</p>';
+  const rationale = s.rationale
+    ? `<div class="rationale">${renderRecord(s.rationale)}</div>`
+    : '';
   const decision = s.decision
     ? `<div class="decision">
          <span class="decision-label">Chose</span>
          <p>${escapeHtml(s.decision)}</p>
-         ${s.rationale ? `<p class="rationale">${escapeHtml(s.rationale)}</p>` : ''}
+         ${rationale}
          <span class="decision-time">${fmtDate(s.decidedAt)}</span>
        </div>`
     : '<p class="pending">No selection yet.</p>';
@@ -240,6 +270,54 @@ const STYLES = `
   .pending { color: var(--warning); font-size: 0.875rem; padding: 0.625rem 0.875rem; background: rgba(202,138,4,0.08); border-left: 3px solid var(--warning); border-radius: 0 4px 4px 0; }
   .problem { font-size: 1.0625rem; line-height: 1.6; }
   .constraints, .options, .tasks { padding-left: 1.25rem; }
+
+  /* Collapsible records — load-bearing for the .md-overload pitch.
+     Closed by default. Summary line shows first sentence; click to expand. */
+  details.record {
+    margin: 0.125rem 0;
+  }
+  details.record > summary {
+    cursor: pointer;
+    list-style: none;
+    color: var(--text-muted);
+    padding: 0.125rem 0 0.125rem 0.875rem;
+    position: relative;
+    border-radius: 3px;
+    transition: color 120ms;
+  }
+  details.record > summary::-webkit-details-marker { display: none; }
+  details.record > summary::before {
+    content: "›";
+    position: absolute;
+    left: 0;
+    top: 0.0625rem;
+    color: var(--text-faint);
+    font-family: ui-monospace, monospace;
+    font-weight: 600;
+    transition: transform 150ms ease, color 150ms ease;
+    transform-origin: 0.4em 0.5em;
+    display: inline-block;
+  }
+  details.record[open] > summary::before {
+    transform: rotate(90deg);
+    color: var(--accent);
+  }
+  details.record > summary:hover { color: var(--text); }
+  details.record > summary:hover::before { color: var(--accent); }
+  details.record > .record-body {
+    margin-top: 0.375rem;
+    padding: 0.625rem 0.875rem 0.625rem 1rem;
+    background: var(--surface-2);
+    border-left: 2px solid var(--accent-deep);
+    border-radius: 0 4px 4px 0;
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+  .record-text { color: var(--text-muted); }
+  .problem details.record > .record-body { font-size: 1rem; }
+
   .decision {
     margin-top: 1.5rem;
     padding: 0.875rem 1rem;

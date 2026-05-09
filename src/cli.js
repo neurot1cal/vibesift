@@ -26,6 +26,7 @@ Commands
   vibesift ship  <slug> task done <id>
   vibesift decide <slug> --phase <scope|sift|ship> --text "..."
   vibesift advance <slug>
+  vibesift render <slug>   (re-render HTML from existing state — use after template upgrades)
   vibesift status <slug>
   vibesift list
   vibesift bootstrap   (run once per repo: scaffolds docs/sessions/ + index.html)
@@ -209,6 +210,20 @@ function cmdAdvance(argv) {
   reportCommit(r, `${before} → ${state.phase}`);
 }
 
+function cmdRender(argv) {
+  const slug = argv[0];
+  if (!slug) die('usage: vibesift render <slug>');
+  const { state, path } = loadState(slug);
+  // Touch updatedAt so the audit trail reflects when the re-render happened.
+  state.updatedAt = Date.now();
+  writeFileSync(path, renderHTML(state));
+  const r = autoCommit({
+    paths: [path],
+    message: `vibesift: re-render ${slug} from current template`,
+  });
+  reportCommit(r, `re-rendered ${slug}`);
+}
+
 function cmdStatus(argv) {
   const slug = argv[0];
   if (!slug) die('usage: vibesift status <slug>');
@@ -325,6 +340,7 @@ function main() {
     case 'ship': return cmdShip(rest);
     case 'decide': return cmdDecide(rest);
     case 'advance': return cmdAdvance(rest);
+    case 'render': return cmdRender(rest);
     case 'status': return cmdStatus(rest);
     case 'list': return cmdList();
     case 'bootstrap': return cmdBootstrap();
