@@ -264,7 +264,12 @@
       <h2>Sift</h2>
       <h3>Options considered</h3>
       <ul class="options"><li><details class="record"><summary>Sequential: one feature at a time, three commits to one branch, one PR.</summary><div class="record-body">Sequential: one feature at a time, three commits to one branch, one PR. Slow but no merge-conflict risk.</div></details></li><li><details class="record"><summary>Parallel via 3 worktrees + 3 subagents + 3 PRs.</summary><div class="record-body">Parallel via 3 worktrees + 3 subagents + 3 PRs. Demonstrates the parallel pattern as we ship it. Conflict risk is on src/cli.js (all three touch it); resolve at merge time.</div></details></li><li><details class="record"><summary>One mega-PR via parallel agents in a single shared worktree.</summary><div class="record-body">One mega-PR via parallel agents in a single shared worktree. Rejected — agents stomp each other&#39;s edits; no clean review surface.</div></details></li></ul>
-      <p class="pending">No selection yet.</p>
+      <div class="decision">
+         <span class="decision-label">Chose</span>
+         <p>Option B. Three worktrees, three parallel agents, three PRs. Each agent works on src/cli.js in its own worktree.</p>
+         <div class="rationale"><details class="record"><summary>Option B. The user explicitly asked for agent teams + a working session.</summary><div class="record-body">Option B. The user explicitly asked for agent teams + a working session. Worktrees give each agent an isolated src/cli.js to edit; PR-time merge conflicts in CLI command-routing are mechanical and quick to resolve. Option A is safer but boring. Option C breaks the audit trail — if three agents auto-commit to the same branch in the same worktree, git races and the recorded session loses fidelity.</div></details></div>
+         <span class="decision-time">2026-05-09 19:29 UTC</span>
+       </div>
     </section>
 
     <section id="ship" class="phase">
@@ -285,6 +290,12 @@
             <span class="log-time">2026-05-09 19:29 UTC</span>
           </li>
         
+          <li>
+            <span class="log-phase">Sift</span>
+            <span class="log-text">Option B. Three worktrees, three parallel agents, three PRs. Each agent works on src/cli.js in its own worktree.</span>
+            <span class="log-time">2026-05-09 19:29 UTC</span>
+          </li>
+        
       </ol>
     </section>
 </main>
@@ -298,7 +309,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "sift",
   "createdAt": 1778354934973,
-  "updatedAt": 1778354961598,
+  "updatedAt": 1778354961716,
   "scope": {
     "problem": "Today vibesift CLI is purely serial. Every mutation auto-commits with no preview-before-commit option (gap surfaced in the v0.1 session). The landing sessions list is hand-maintained and goes stale. Ship-phase tasks have no way to attribute work to a specific agent or capture parallel-team execution. Block-level commenting is also queued but is significantly more work (needs a worker + auth) and is deferred to v0.3.",
     "constraints": [
@@ -326,9 +337,9 @@
         "addedAt": 1778354961477
       }
     ],
-    "decision": null,
+    "decision": "Option B. Three worktrees, three parallel agents, three PRs. Each agent works on src/cli.js in its own worktree.",
     "rationale": "Option B. The user explicitly asked for agent teams + a working session. Worktrees give each agent an isolated src/cli.js to edit; PR-time merge conflicts in CLI command-routing are mechanical and quick to resolve. Option A is safer but boring. Option C breaks the audit trail — if three agents auto-commit to the same branch in the same worktree, git races and the recorded session loses fidelity.",
-    "decidedAt": null
+    "decidedAt": 1778354961716
   },
   "ship": {
     "tasks": [],
@@ -340,6 +351,11 @@
       "phase": "scope",
       "text": "Three features in parallel: (1) --no-commit flag for preview-before-commit; (2) vibesift index command that auto-regenerates docs/index.html sessions list; (3) ship-phase agent attribution. Block-level commenting deferred to v0.3.",
       "decidedAt": 1778354960999
+    },
+    {
+      "phase": "sift",
+      "text": "Option B. Three worktrees, three parallel agents, three PRs. Each agent works on src/cli.js in its own worktree.",
+      "decidedAt": 1778354961716
     }
   ]
 }
