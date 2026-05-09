@@ -18,15 +18,15 @@ import { install, listHarnesses } from './install.js';
 const HELP = `vibesift — Scope, Sift, Ship.
 
 Commands
-  vibesift init <slug> --title "..." [--problem "..."]
-  vibesift scope <slug> add-constraint "..."
-  vibesift sift  <slug> add-option "..."
-  vibesift sift  <slug> rationale "..."
-  vibesift ship  <slug> task add "..."
-  vibesift ship  <slug> task done <id>
-  vibesift decide <slug> --phase <scope|sift|ship> --text "..."
-  vibesift advance <slug>
-  vibesift render <slug>   (re-render HTML from existing state — use after template upgrades)
+  vibesift init <slug> --title "..." [--problem "..."] [--no-commit]
+  vibesift scope <slug> add-constraint "..." [--no-commit]
+  vibesift sift  <slug> add-option "..." [--no-commit]
+  vibesift sift  <slug> rationale "..." [--no-commit]
+  vibesift ship  <slug> task add "..." [--no-commit]
+  vibesift ship  <slug> task done <id> [--no-commit]
+  vibesift decide <slug> --phase <scope|sift|ship> --text "..." [--no-commit]
+  vibesift advance <slug> [--no-commit]
+  vibesift render <slug> [--no-commit]   (re-render HTML from existing state — use after template upgrades)
   vibesift status <slug>
   vibesift list
   vibesift bootstrap   (run once per repo: scaffolds docs/sessions/ + index.html)
@@ -35,6 +35,7 @@ Commands
 
 Sessions are written to <repo>/docs/sessions/<slug>/index.html.
 Each command auto-commits the change to the current branch.
+Pass --no-commit to write the file but skip the commit (preview-before-commit).
 GitHub Pages set to /docs serves the index immediately.
 `;
 
@@ -80,13 +81,19 @@ function loadState(slug, cwd = process.cwd()) {
   return { state: parseState(html), path };
 }
 
-function saveAndCommit(state, path, message) {
+function saveAndCommit(state, path, message, opts = {}) {
+  const commit = opts.commit !== false;
   writeFileSync(path, renderHTML(state));
+  if (!commit) {
+    process.stderr.write('vibesift: --no-commit set, file written but not committed\n');
+    return { ok: true, committed: false, skipped: true };
+  }
   const result = autoCommit({ paths: [path], message });
   return result;
 }
 
 function reportCommit(result, message) {
+  if (result.skipped) return;
   if (!result.ok) {
     process.stderr.write(`vibesift: skipped commit — ${result.reason}\n`);
     return;
@@ -98,12 +105,20 @@ function reportCommit(result, message) {
   process.stdout.write(`✓ ${message}\n`);
 }
 
+// Strip --no-commit from a positional argv (used by cmds that don't run
+// parseArgs because their text payload is built via argv.slice(N).join(' ')).
+// Returns { argv: <argv with --no-commit removed>, noCommit: <bool> }.
+function extractNoCommit(argv) {
+  const noCommit = argv.includes('--no-commit');
+  return { argv: argv.filter(a => a !== '--no-commit'), noCommit };
+}
+
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,80}$/;
 
 function cmdInit(argv) {
   const { _: pos, flags } = parseArgs(argv);
   const slug = pos[0];
-  if (!slug || !SLUG_RE.test(slug)) die('usage: vibesift init <slug> --title "..." [--problem "..."]');
+  if (!slug || !SLUG_RE.test(slug)) die('usage: vibesift init <slug> --title "..." [--problem "..."] [--no-commit]');
   if (!flags.title) die('--title is required');
   const cwd = process.cwd();
   const dir = join(sessionsDir(cwd), slug);
@@ -116,84 +131,92 @@ function cmdInit(argv) {
   });
   const path = join(dir, 'index.html');
   writeFileSync(path, renderHTML(state));
-  const result = autoCommit({
-    paths: [path],
-    message: `vibesift: scope started for ${slug}`,
-  });
-  reportCommit(result, `created ${path}`);
+  if (flags['no-commit']) {
+    process.stderr.write('vibesift: --no-commit set, file written but not committed\n');
+  } else {
+    const result = autoCommit({
+      paths: [path],
+      message: `vibesift: scope started for ${slug}`,
+    });
+    reportCommit(result, `created ${path}`);
+  }
   process.stdout.write(`session: ${slug}\nstatus: scoping\nfile: docs/sessions/${slug}/index.html\n`);
 }
 
 function cmdScope(argv) {
-  const slug = argv[0];
-  const sub = argv[1];
-  if (!slug || sub !== 'add-constraint') die('usage: vibesift scope <slug> add-constraint "..."');
-  const text = argv.slice(2).join(' ').trim();
+  const { argv: rest, noCommit } = extractNoCommit(argv);
+  const slug = rest[0];
+  const sub = rest[1];
+  if (!slug || sub !== 'add-constraint') die('usage: vibesift scope <slug> add-constraint "..." [--no-commit]');
+  const text = rest.slice(2).join(' ').trim();
   if (!text) die('constraint text required');
   const { state, path } = loadState(slug);
   addConstraint(state, text);
-  const result = saveAndCommit(state, path, `vibesift: scope constraint on ${slug}`);
+  const result = saveAndCommit(state, path, `vibesift: scope constraint on ${slug}`, { commit: !noCommit });
   reportCommit(result, `added constraint to ${slug}`);
 }
 
 function cmdSift(argv) {
-  const slug = argv[0];
-  const sub = argv[1];
-  if (!slug) die('usage: vibesift sift <slug> <add-option|rationale> "..."');
-  const text = argv.slice(2).join(' ').trim();
+  const { argv: rest, noCommit } = extractNoCommit(argv);
+  const slug = rest[0];
+  const sub = rest[1];
+  if (!slug) die('usage: vibesift sift <slug> <add-option|rationale> "..." [--no-commit]');
+  const text = rest.slice(2).join(' ').trim();
   if (!text) die('text required');
   const { state, path } = loadState(slug);
   if (sub === 'add-option') {
     addOption(state, text);
-    const r = saveAndCommit(state, path, `vibesift: sift option on ${slug}`);
+    const r = saveAndCommit(state, path, `vibesift: sift option on ${slug}`, { commit: !noCommit });
     reportCommit(r, `added option to ${slug}`);
   } else if (sub === 'rationale') {
     setRationale(state, text);
-    const r = saveAndCommit(state, path, `vibesift: sift rationale on ${slug}`);
+    const r = saveAndCommit(state, path, `vibesift: sift rationale on ${slug}`, { commit: !noCommit });
     reportCommit(r, `set rationale on ${slug}`);
   } else {
-    die('usage: vibesift sift <slug> <add-option|rationale> "..."');
+    die('usage: vibesift sift <slug> <add-option|rationale> "..." [--no-commit]');
   }
 }
 
 function cmdShip(argv) {
-  const slug = argv[0];
-  const sub = argv[1];
-  if (!slug || sub !== 'task') die('usage: vibesift ship <slug> task <add|done> ...');
-  const action = argv[2];
+  const { argv: rest, noCommit } = extractNoCommit(argv);
+  const slug = rest[0];
+  const sub = rest[1];
+  if (!slug || sub !== 'task') die('usage: vibesift ship <slug> task <add|done> ... [--no-commit]');
+  const action = rest[2];
   const { state, path } = loadState(slug);
   if (action === 'add') {
-    const text = argv.slice(3).join(' ').trim();
+    const text = rest.slice(3).join(' ').trim();
     if (!text) die('task text required');
     const id = addTask(state, text);
-    const r = saveAndCommit(state, path, `vibesift: ship task #${id} added on ${slug}`);
+    const r = saveAndCommit(state, path, `vibesift: ship task #${id} added on ${slug}`, { commit: !noCommit });
     reportCommit(r, `task #${id}: ${text}`);
   } else if (action === 'done') {
-    const id = argv[3];
+    const id = rest[3];
     if (!id) die('task id required');
     markTaskDone(state, id);
-    const r = saveAndCommit(state, path, `vibesift: ship task #${id} done on ${slug}`);
+    const r = saveAndCommit(state, path, `vibesift: ship task #${id} done on ${slug}`, { commit: !noCommit });
     reportCommit(r, `task #${id} marked done`);
   } else {
-    die('usage: vibesift ship <slug> task <add|done> ...');
+    die('usage: vibesift ship <slug> task <add|done> ... [--no-commit]');
   }
 }
 
 function cmdDecide(argv) {
   const { _: pos, flags } = parseArgs(argv);
   const slug = pos[0];
-  if (!slug) die('usage: vibesift decide <slug> --phase <scope|sift|ship> --text "..."');
+  if (!slug) die('usage: vibesift decide <slug> --phase <scope|sift|ship> --text "..." [--no-commit]');
   if (!flags.phase || !PHASES.includes(flags.phase)) die('--phase must be one of: ' + PHASES.join(', '));
   if (!flags.text || flags.text === true) die('--text is required');
   const { state, path } = loadState(slug);
   appendDecision(state, flags.phase, flags.text);
-  const r = saveAndCommit(state, path, `vibesift: decision (${flags.phase}) on ${slug}`);
+  const r = saveAndCommit(state, path, `vibesift: decision (${flags.phase}) on ${slug}`, { commit: !flags['no-commit'] });
   reportCommit(r, `decision recorded in ${flags.phase}`);
 }
 
 function cmdAdvance(argv) {
-  const slug = argv[0];
-  if (!slug) die('usage: vibesift advance <slug>');
+  const { argv: rest, noCommit } = extractNoCommit(argv);
+  const slug = rest[0];
+  if (!slug) die('usage: vibesift advance <slug> [--no-commit]');
   const { state, path } = loadState(slug);
   const before = state.phase;
   advancePhase(state);
@@ -206,17 +229,22 @@ function cmdAdvance(argv) {
       if (url) setDiffUrl(state, url);
     }
   }
-  const r = saveAndCommit(state, path, `vibesift: advance ${slug} → ${state.phase}`);
+  const r = saveAndCommit(state, path, `vibesift: advance ${slug} → ${state.phase}`, { commit: !noCommit });
   reportCommit(r, `${before} → ${state.phase}`);
 }
 
 function cmdRender(argv) {
-  const slug = argv[0];
-  if (!slug) die('usage: vibesift render <slug>');
+  const { argv: rest, noCommit } = extractNoCommit(argv);
+  const slug = rest[0];
+  if (!slug) die('usage: vibesift render <slug> [--no-commit]');
   const { state, path } = loadState(slug);
   // Touch updatedAt so the audit trail reflects when the re-render happened.
   state.updatedAt = Date.now();
   writeFileSync(path, renderHTML(state));
+  if (noCommit) {
+    process.stderr.write('vibesift: --no-commit set, file written but not committed\n');
+    return;
+  }
   const r = autoCommit({
     paths: [path],
     message: `vibesift: re-render ${slug} from current template`,
