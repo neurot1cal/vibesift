@@ -219,7 +219,7 @@ fall back to copy on filesystems that don't support them.
 ## Development
 
 ```bash
-npm test                          # 28 unit tests, no devDependencies
+npm test                          # 30 unit tests, no devDependencies
 node src/cli.js --help            # local CLI
 ```
 
