@@ -242,6 +242,11 @@
           <span class="task-mark">·</span>
           <span class="task-text">Inline a tiny dark/light theme toggle script — same pattern as src/template.js so the toggle persists in localStorage and respects prefers-color-scheme on first paint.</span>
         </li>
+      
+        <li class="task-todo">
+          <span class="task-mark">·</span>
+          <span class="task-text">Verify locally: &#39;python3 -m http.server 8788 -d docs&#39; then curl localhost:8788 and confirm hero text, all three verbs, and both session links render. Astro preview is blocked here so http.server is the correct tool.</span>
+        </li>
       </ul>
       <p><a class="diff-link" href="https://github.com/neurot1cal/vibesift/compare/main...feat/vibesift-com-landing">View diff →</a></p>
       
@@ -276,7 +281,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "ship",
   "createdAt": 1778353301743,
-  "updatedAt": 1778353377195,
+  "updatedAt": 1778353377318,
   "scope": {
     "problem": "docs/index.html is the bootstrap placeholder. First-time visitors at vibesift.com see 'No sessions yet' and zero context about the project — no description, no Scope→Sift→Ship explainer, no link to the GitHub repo, no list of actual sessions. The placeholder shipped because v0.1 used the bootstrap template as a stub; the landing page is now its own feature.",
     "constraints": [
@@ -324,6 +329,11 @@
       {
         "id": 3,
         "text": "Inline a tiny dark/light theme toggle script — same pattern as src/template.js so the toggle persists in localStorage and respects prefers-color-scheme on first paint.",
+        "done": false
+      },
+      {
+        "id": 4,
+        "text": "Verify locally: 'python3 -m http.server 8788 -d docs' then curl localhost:8788 and confirm hero text, all three verbs, and both session links render. Astro preview is blocked here so http.server is the correct tool.",
         "done": false
       }
     ],
