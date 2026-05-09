@@ -232,6 +232,41 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 - [SECURITY.md](SECURITY.md) — vulnerability reporting
 - [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — community standards
 
+## Security & supply chain
+
+vibesift runs against your repo with `git` and the local filesystem. A few things
+make that safer than the typical npm CLI:
+
+- **Zero runtime dependencies.** `npm view vibesift dependencies` returns `{}`.
+  Nothing to compromise upstream.
+- **SLSA L3 provenance** on every published version. The npm registry records a
+  signed attestation linking each tarball to the exact GitHub Actions run that
+  built it. Verify before installing:
+  ```bash
+  npm view vibesift@latest --json | jq .dist.attestations
+  ```
+- **Pack contents are whitelisted.** Every PR runs the `pack-audit.yml`
+  workflow that asserts the published file list matches an explicit allow-list
+  (no test files, no dotfiles, no surprise additions). Changing the published
+  set requires editing the whitelist in the same PR.
+- **Tag-version match guard** in `release.yml`: refuses to publish if the
+  git tag and `package.json` version don't agree.
+- **Dependency signature audit** in `release.yml` (no-op today; future-proof
+  against silently adding an unsigned dep in a later release).
+- **No install scripts.** vibesift's `package.json` has no `postinstall` or
+  `preinstall` hooks. `npm install -g vibesift` runs zero arbitrary code.
+
+For low-trust environments, prefer:
+
+```bash
+npx vibesift <command>     # one-shot, no global install
+```
+
+over `npm install -g vibesift`. `npx` runs the published binary without
+elevating it into a long-lived global.
+
+To report a vulnerability, see [SECURITY.md](SECURITY.md).
+
 ## Related
 
 - [bdigital-public](https://github.com/neurot1cal/bdigital-public) — sibling

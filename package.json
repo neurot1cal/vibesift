@@ -1,7 +1,7 @@
 {
   "name": "vibesift",
-  "version": "0.1.0",
-  "description": "Static HTML status broadcaster for terminal-driven agentic flows. Scope, Sift, Ship.",
+  "version": "0.2.0",
+  "description": "One CLI, one HTML page per agent session. Read-only, auto-committed, collapsible records. Scope. Sift. Ship.",
   "type": "module",
   "bin": {
     "vibesift": "./src/cli.js"
@@ -14,7 +14,10 @@
   "files": [
     "src/",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "test": "node --test tests/state.test.js tests/template.test.js tests/cli-no-commit.test.js tests/cli-index.test.js",
@@ -25,15 +28,27 @@
   },
   "keywords": [
     "agent",
+    "agentic",
     "claude-code",
+    "codex",
+    "gemini-cli",
+    "opencode",
+    "cursor",
     "spec-driven",
     "html",
     "session",
-    "status"
+    "status",
+    "scope-sift-ship",
+    "spec-kit",
+    "superpowers"
   ],
-  "license": "MIT",
+  "license": "MIT OR Apache-2.0",
+  "homepage": "https://vibesift.com",
+  "bugs": {
+    "url": "https://github.com/neurot1cal/vibesift/issues"
+  },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vibesift/vibesift.git"
+    "url": "git+https://github.com/neurot1cal/vibesift.git"
   }
 }

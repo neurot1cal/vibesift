@@ -7,21 +7,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-05-09
+
+### Added
+
+- **Collapsible records.** Constraints, options, problem statements, and
+  rationale text over 80 chars now render as `<details>` / `<summary>`
+  blocks. Default closed; first sentence (or 77-char hard cut) is the
+  summary. The page reads at a glance; every supporting detail is one
+  click away.
+- **`vibesift render <slug>`** — re-render an existing session's HTML
+  from its current state without mutating the state. Use after a
+  template upgrade.
+- **`vibesift index`** — scans `docs/sessions/*` and regenerates the
+  landing page's sessions list between `<!-- VIBESIFT:SESSIONS:START -->`
+  / `END` markers. Idempotent first-run migration. Auto-commits.
+- **`vibesift ship <slug> diff <url>`** — manually set the ship-phase
+  diff URL (e.g. a merged PR link, or any non-GitHub repo's diff).
+- **`vibesift ship <slug> task add ... --agent <name>`** — optional
+  agent attribution per task. Renders as a small `.task-agent` badge
+  in the HTML, and `vibesift status` prints a per-agent summary line
+  when any tasks have agents.
+- **`--no-commit` flag** — opt-in escape hatch on `init`, `scope`,
+  `sift`, `ship`, `decide`, `advance`, `render` — writes the file but
+  skips the commit. Default behavior unchanged: every mutation
+  auto-commits unless explicitly opted out.
+- **Real landing page** at `docs/index.html` (status-board /
+  monospace-everywhere aesthetic) replacing the bootstrap stub.
+  Matches the session pages' theme tokens; one `vibesift:theme`
+  localStorage key persists across the landing and session pages.
+- **Project `CLAUDE.md`** capturing positioning, invariants, brand
+  palette, and scope boundaries for future agent sessions in the repo.
+
+### Changed
+
+- `decide --phase ship` now attempts to upgrade a stale-branch
+  `compare/main...feat-branch` diff URL to a stable PR URL via `gh`
+  before the head ref disappears. Best-effort; falls through with a
+  stderr hint if `gh` isn't installed or no matching PR is found.
+- `escapeHtml` is exported from `src/template.js` (was internal).
+- README "Why" section reframed around the .md-overload problem.
+  Drops the "pre-release" badge for "research-preview" with a direct
+  link to issues.
+
+### Fixed
+
+- `docs/sessions/vibesift-com-landing/` diff link 404'd after PR #10
+  merged with `--delete-branch`. Hot-fixed in #11; long-term fix
+  shipped as the `decide --phase ship` PR upgrade above.
+
 ### Security
 
-- SHA-pin every third-party action in `ci.yml` and `release.yml` so a
-  tag rewrite or hijacked release can't silently substitute workflow
-  code. Each pin carries a comment with the human-readable version.
-- Add `dependency-review.yml` to gate pull requests on CVE severity
-  (`moderate`) and on a license allow-list (MIT, Apache-2.0,
-  BSD-2-Clause, BSD-3-Clause, ISC, 0BSD, CC0-1.0).
-- Add `scorecard.yml` (OpenSSF Scorecard) running weekly Tuesday plus
-  on `push` to main, branch-protection changes, and manual dispatch.
-  SARIF uploads to the Security tab.
-- Add `.github/CODEOWNERS` requiring review on skill content,
-  installer, template renderer, security policy, and workflow files.
-- Add `.github/FUNDING.yml` placeholder pointing at the GitHub Sponsors
-  profile for `@neurot1cal`.
+- **Release supply-chain hardening:**
+  - `release.yml` verifies the git tag matches `package.json` version
+    before publish.
+  - `release.yml` runs `npm pack --dry-run` and `npm audit signatures`
+    before publishing.
+  - New `pack-audit.yml` runs on every PR + push to main, asserting
+    the published tarball's file list matches an explicit whitelist.
+    Catches accidentally publishing tests, dotfiles, or secrets.
+  - `npm publish --provenance` (since v0.1) — every published tarball
+    carries a SLSA L3-grade signature linking back to the GitHub
+    Actions run that built it. Verifiable via
+    `npm view vibesift@0.2.0 --json | jq .dist.attestations`.
 
 ## [0.1.0] — 2026-05-09
 
@@ -37,5 +85,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dual MIT / Apache-2.0 license
 - Governance: CONTRIBUTING, CODE_OF_CONDUCT, SECURITY policies
 
-[Unreleased]: https://github.com/neurot1cal/vibesift/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/neurot1cal/vibesift/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/neurot1cal/vibesift/releases/tag/v0.2.0
 [0.1.0]: https://github.com/neurot1cal/vibesift/releases/tag/v0.1.0
