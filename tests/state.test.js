@@ -88,3 +88,16 @@ test('parseState round-trips through renderHTML', () => {
 test('PHASES is the expected ordered list', () => {
   assert.deepEqual(PHASES, ['scope', 'sift', 'ship']);
 });
+
+test('setDiffUrl updates ship.diffUrl and bumps updatedAt', async () => {
+  const s = emptyState({ slug: 'd', title: 'D' });
+  assert.equal(s.ship.diffUrl, null);
+  const before = s.updatedAt;
+  // Yield the event loop so Date.now() can advance — node test runs fast
+  // enough on hot caches that two calls within the same millisecond are
+  // common, which would mask a "did we touch updatedAt?" bug.
+  await new Promise(resolve => setTimeout(resolve, 2));
+  setDiffUrl(s, 'https://github.com/o/r/pull/42');
+  assert.equal(s.ship.diffUrl, 'https://github.com/o/r/pull/42');
+  assert.ok(s.updatedAt > before, 'updatedAt should advance');
+});
