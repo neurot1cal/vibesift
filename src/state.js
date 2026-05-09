@@ -91,9 +91,16 @@ export function addConstraint(state, text) {
   return state;
 }
 
-export function addTask(state, text) {
+export function addTask(state, text, opts = {}) {
   const id = state.ship.tasks.length + 1;
-  state.ship.tasks.push({ id, text, done: false });
+  const task = { id, text, done: false };
+  // Optional agent attribution. Only attach the field if a non-empty name
+  // was supplied — keeps existing sessions byte-identical when no agent is
+  // named, and round-trips cleanly through parseState.
+  if (opts && typeof opts.agent === 'string' && opts.agent.trim()) {
+    task.agent = opts.agent.trim();
+  }
+  state.ship.tasks.push(task);
   state.updatedAt = Date.now();
   return id;
 }

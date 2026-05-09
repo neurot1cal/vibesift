@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   emptyState, addConstraint, appendDecision, addOption,
-  addTask, markTaskDone, advancePhase,
+  addTask, markTaskDone, advancePhase, setDiffUrl,
 } from '../src/state.js';
 import { renderHTML } from '../src/template.js';
 
@@ -118,6 +118,48 @@ test('renderRecord falls back to char-truncation when no sentence boundary found
   // rather than the exact cut-point so the test is robust to small wording changes.
   assert.match(html, /<summary>a long single-clause constraint with absolutely no sentence terminator/);
   assert.match(html, /…<\/summary>/);
+});
+
+test('diff link renders only when diffUrl is set', () => {
+  const withUrl = emptyState({ slug: 'a', title: 'A' });
+  setDiffUrl(withUrl, 'https://github.com/o/r/pull/42');
+  const htmlWith = renderHTML(withUrl);
+  assert.match(htmlWith, /class="diff-link"/);
+  assert.match(htmlWith, /href="https:\/\/github\.com\/o\/r\/pull\/42"/);
+  assert.match(htmlWith, /View diff/);
+
+  const without = emptyState({ slug: 'b', title: 'B' });
+  assert.equal(without.ship.diffUrl, null);
+  const htmlWithout = renderHTML(without);
+  assert.doesNotMatch(htmlWithout, /class="diff-link"/);
+  assert.doesNotMatch(htmlWithout, /View diff/);
+});
+
+test('task with agent renders the .task-agent badge', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  advancePhase(s); advancePhase(s);
+  addTask(s, 'wire the badge', { agent: 'alice' });
+  const html = renderHTML(s);
+  assert.match(html, /<span class="task-agent">alice<\/span>/);
+});
+
+test('task agent name is HTML-escaped to prevent injection', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  advancePhase(s); advancePhase(s);
+  addTask(s, 'safe task', { agent: '<script>alert(1)</script>' });
+  const html = renderHTML(s);
+  // The raw script tag must NOT appear inside the rendered task badge.
+  // Slice off the embedded JSON state block (which contains the raw payload
+  // in JSON-escaped form) before asserting.
+  const beforeStateBlock = html.split('id="vibesift-state"')[0];
+  assert.ok(
+    !beforeStateBlock.includes('<script>alert(1)</script>'),
+    'raw script tag must not appear in rendered HTML'
+  );
+  assert.match(
+    beforeStateBlock,
+    /<span class="task-agent">&lt;script&gt;alert\(1\)&lt;\/script&gt;<\/span>/
+  );
 });
 
 test('JSON state block escapes </script> to prevent breakout', () => {
