@@ -305,6 +305,11 @@
           <span class="task-mark">·</span>
           <span class="task-text">Re-render existing sessions with any template changes (vibesift render)</span>
         </li>
+      
+        <li class="task-todo">
+          <span class="task-mark">·</span>
+          <span class="task-text">Tag v0.2.0 + npm publish (release.yml fires on tag push)</span>
+        </li>
       </ul>
       <p><a class="diff-link" href="https://github.com/neurot1cal/vibesift/compare/main...feat/v0-2-coordinator">View diff →</a></p>
       
@@ -339,7 +344,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "ship",
   "createdAt": 1778354934973,
-  "updatedAt": 1778354962583,
+  "updatedAt": 1778354962707,
   "scope": {
     "problem": "Today vibesift CLI is purely serial. Every mutation auto-commits with no preview-before-commit option (gap surfaced in the v0.1 session). The landing sessions list is hand-maintained and goes stale. Ship-phase tasks have no way to attribute work to a specific agent or capture parallel-team execution. Block-level commenting is also queued but is significantly more work (needs a worker + auth) and is deferred to v0.3.",
     "constraints": [
@@ -401,6 +406,11 @@
       {
         "id": 6,
         "text": "Re-render existing sessions with any template changes (vibesift render)",
+        "done": false
+      },
+      {
+        "id": 7,
+        "text": "Tag v0.2.0 + npm publish (release.yml fires on tag push)",
         "done": false
       }
     ],
