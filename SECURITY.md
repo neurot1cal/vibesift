@@ -45,10 +45,12 @@ could trick an agent into running unintended commands, but this requires
 write access to your local checkout — an attacker with that access has
 broader capabilities already.
 
-## Known non-issues
+## Past advisories
 
-- HTML output is not user-input-driven (it's generated from CLI args, which
-  the user types). XSS in the rendered page is mitigated by HTML-escaping
-  every interpolated string.
-- The state JSON block is `<script type="application/json">` — never executed
-  as code.
+- **VS-2026-001 — JSON-in-script breakout (fixed in v0.1.1).** User-supplied
+  text passed via `--title`, `add-constraint`, `add-option`, `--text`, or
+  task names was emitted verbatim inside `<script type="application/json">`.
+  A payload containing `</script><script>alert(1)</script>` would close the
+  state block early and execute as HTML. Fixed by escaping `<`, `>`, and `&`
+  as `<` / `>` / `&` in the JSON output (OWASP-recommended
+  pattern for JSON-in-HTML). Regression test in `tests/template.test.js`.

@@ -5,7 +5,7 @@
 //
 // Adding a new harness = one entry in HARNESSES below.
 
-import { existsSync, mkdirSync, symlinkSync, copyFileSync, readlinkSync, unlinkSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, symlinkSync, copyFileSync, readlinkSync, unlinkSync, statSync, renameSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -70,13 +70,14 @@ function installAt(target, mode) {
     // Existing different file — back up rather than clobber.
     const backup = `${target}.backup-${Date.now()}`;
     try {
-      const stat = statSync(target);
-      if (stat.isSymbolicLink() || stat.isFile()) {
-        // Move via rename — same FS, fast.
-        const { renameSync } = require('node:fs');
-        renameSync(target, backup);
-      }
+      // Move via rename — same filesystem, fast, atomic on POSIX. Use
+      // lstat semantics: rename moves the link itself, not its pointee,
+      // so a symlink target is preserved as a symlink in the backup.
+      renameSync(target, backup);
     } catch {
+      // Rename can fail across filesystems; fall back to unlink. We
+      // accept potential loss of the prior file content in that case
+      // because the alternative is leaving a stale skill in place.
       try { unlinkSync(target); } catch {}
     }
   }

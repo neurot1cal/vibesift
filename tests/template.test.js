@@ -68,3 +68,29 @@ test('viewport meta tag present for mobile readability', () => {
   const html = renderHTML(s);
   assert.match(html, /<meta name="viewport"/);
 });
+
+test('JSON state block escapes </script> to prevent breakout', () => {
+  // Regression test: user-supplied text containing the literal `</script>`
+  // would break out of the JSON block and execute as HTML/JS without the
+  // </>/& encoding fix. This test asserts the encoding
+  // is in place by feeding payloads that exercise each metacharacter.
+  const s = emptyState({ slug: 'a', title: 'safe' });
+  s.scope.constraints.push('</script><script>alert(1)</script>');
+  s.scope.constraints.push('<!-- <script>alert(2)</script> -->');
+  s.scope.constraints.push('alert("&" symbol)');
+  const html = renderHTML(s);
+  // Find the state block and assert no raw breakout sequences inside it.
+  const stateMatch = html.match(/<script type="application\/json" id="vibesift-state">\s*([\s\S]*?)\s*<\/script>/);
+  assert.ok(stateMatch, 'state block must be present');
+  const body = stateMatch[1];
+  // The bytes `</script` MUST NOT appear inside the JSON, even though
+  // the ATTACKER's input contained that exact sequence.
+  assert.doesNotMatch(body, /<\/script/i, 'no raw </script in JSON');
+  assert.doesNotMatch(body, /<!--/, 'no raw HTML comment opener');
+  // The payload must be present in escaped form (round-trippable).
+  // JSON parsing of the body should succeed and preserve the strings.
+  const parsed = JSON.parse(body);
+  assert.equal(parsed.scope.constraints[0], '</script><script>alert(1)</script>');
+  assert.equal(parsed.scope.constraints[1], '<!-- <script>alert(2)</script> -->');
+  assert.equal(parsed.scope.constraints[2], 'alert("&" symbol)');
+});
