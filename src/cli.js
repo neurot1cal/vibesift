@@ -2,6 +2,7 @@
 // vibesift — static HTML status broadcaster for terminal-driven flows.
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import {
   emptyState, parseState, advancePhase, appendDecision,
@@ -24,6 +25,7 @@ Commands
   vibesift sift  <slug> rationale "..." [--no-commit]
   vibesift ship  <slug> task add "..." [--agent <name>] [--no-commit]
   vibesift ship  <slug> task done <id> [--no-commit]
+  vibesift ship  <slug> diff <url> [--no-commit]   (manually set the ship diff URL — e.g. a merged PR link)
   vibesift decide <slug> --phase <scope|sift|ship> --text "..." [--no-commit]
   vibesift advance <slug> [--no-commit]
   vibesift render <slug> [--no-commit]   (re-render HTML from existing state — use after template upgrades)
@@ -181,41 +183,103 @@ function cmdShip(argv) {
   const { argv: rest, noCommit } = extractNoCommit(argv);
   const slug = rest[0];
   const sub = rest[1];
-  if (!slug || sub !== 'task') die('usage: vibesift ship <slug> task <add|done> ... [--no-commit]');
-  const action = rest[2];
-  const { state, path } = loadState(slug);
-  if (action === 'add') {
-    // Pull --agent <name> out of the positional task-text args before joining.
-    // The flag can appear anywhere after `add`; everything else is the task text.
-    const taskArgs = rest.slice(3);
-    let agent = null;
-    const textParts = [];
-    for (let i = 0; i < taskArgs.length; i++) {
-      if (taskArgs[i] === '--agent' && i + 1 < taskArgs.length) {
-        agent = taskArgs[i + 1];
-        i++;
-      } else {
-        textParts.push(taskArgs[i]);
+  if (!slug) die('usage: vibesift ship <slug> <task|diff> ... [--no-commit]');
+  if (sub === 'task') {
+    const action = rest[2];
+    const { state, path } = loadState(slug);
+    if (action === 'add') {
+      // Pull --agent <name> out of the positional task-text args before joining.
+      // The flag can appear anywhere after `add`; everything else is the task text.
+      const taskArgs = rest.slice(3);
+      let agent = null;
+      const textParts = [];
+      for (let i = 0; i < taskArgs.length; i++) {
+        if (taskArgs[i] === '--agent' && i + 1 < taskArgs.length) {
+          agent = taskArgs[i + 1];
+          i++;
+        } else {
+          textParts.push(taskArgs[i]);
+        }
       }
+      const text = textParts.join(' ').trim();
+      if (!text) die('task text required');
+      const trimmedAgent = typeof agent === 'string' ? agent.trim() : '';
+      const id = addTask(state, text, trimmedAgent ? { agent: trimmedAgent } : undefined);
+      const message = trimmedAgent
+        ? `vibesift: ship task #${id} added to ${trimmedAgent} on ${slug}`
+        : `vibesift: ship task #${id} added on ${slug}`;
+      const r = saveAndCommit(state, path, message, { commit: !noCommit });
+      reportCommit(r, trimmedAgent ? `task #${id} [${trimmedAgent}]: ${text}` : `task #${id}: ${text}`);
+    } else if (action === 'done') {
+      const id = rest[3];
+      if (!id) die('task id required');
+      markTaskDone(state, id);
+      const r = saveAndCommit(state, path, `vibesift: ship task #${id} done on ${slug}`, { commit: !noCommit });
+      reportCommit(r, `task #${id} marked done`);
+    } else {
+      die('usage: vibesift ship <slug> task <add|done> ... [--no-commit]');
     }
-    const text = textParts.join(' ').trim();
-    if (!text) die('task text required');
-    const trimmedAgent = typeof agent === 'string' ? agent.trim() : '';
-    const id = addTask(state, text, trimmedAgent ? { agent: trimmedAgent } : undefined);
-    const message = trimmedAgent
-      ? `vibesift: ship task #${id} added to ${trimmedAgent} on ${slug}`
-      : `vibesift: ship task #${id} added on ${slug}`;
-    const r = saveAndCommit(state, path, message, { commit: !noCommit });
-    reportCommit(r, trimmedAgent ? `task #${id} [${trimmedAgent}]: ${text}` : `task #${id}: ${text}`);
-  } else if (action === 'done') {
-    const id = rest[3];
-    if (!id) die('task id required');
-    markTaskDone(state, id);
-    const r = saveAndCommit(state, path, `vibesift: ship task #${id} done on ${slug}`, { commit: !noCommit });
-    reportCommit(r, `task #${id} marked done`);
+  } else if (sub === 'diff') {
+    const url = rest[2];
+    if (!url) die('usage: vibesift ship <slug> diff <url> [--no-commit]');
+    const { state, path } = loadState(slug);
+    setDiffUrl(state, url);
+    const r = saveAndCommit(state, path, `vibesift: ship diff URL set on ${slug}`, { commit: !noCommit });
+    reportCommit(r, `diff URL set on ${slug}`);
   } else {
-    die('usage: vibesift ship <slug> task <add|done> ... [--no-commit]');
+    die('usage: vibesift ship <slug> <task|diff> ... [--no-commit]');
   }
+}
+
+// Try to discover a stable PR URL for the given branch via the `gh` CLI.
+// Returns the PR url string on success, or null on any failure (gh missing,
+// no matching PR, JSON parse error). Always uses execFileSync with an argv
+// array — never shell-string interpolation — to avoid the indirect command
+// injection sink CodeQL flags.
+function detectPrUrl({ owner, repo, branch }) {
+  if (!owner || !repo || !branch) return null;
+  const target = `${owner}/${repo}`;
+  // 1) Open PR with the given head branch.
+  try {
+    const out = execFileSync(
+      'gh',
+      ['pr', 'view', '--json', 'url', '--repo', target, branch],
+      { stdio: ['ignore', 'pipe', 'ignore'] }
+    ).toString();
+    const parsed = JSON.parse(out);
+    if (parsed && typeof parsed.url === 'string' && parsed.url) return parsed.url;
+  } catch {
+    /* fall through to merged-PR search */
+  }
+  // 2) Most recent merged PR with that head branch.
+  try {
+    const out = execFileSync(
+      'gh',
+      [
+        'pr', 'list',
+        '--state', 'merged',
+        '--search', `head:${branch}`,
+        '--json', 'number,headRefName,url,mergedAt',
+        '--repo', target,
+      ],
+      { stdio: ['ignore', 'pipe', 'ignore'] }
+    ).toString();
+    const list = JSON.parse(out);
+    if (Array.isArray(list) && list.length) {
+      const matches = list.filter(p => p && p.headRefName === branch && typeof p.url === 'string');
+      if (!matches.length) return null;
+      // Pick most recently merged.
+      matches.sort((a, b) => {
+        const ta = a.mergedAt ? Date.parse(a.mergedAt) : 0;
+        const tb = b.mergedAt ? Date.parse(b.mergedAt) : 0;
+        return tb - ta;
+      });
+      return matches[0].url;
+    }
+  } catch {
+    /* gh missing or no merged matches */
+  }
+  return null;
 }
 
 function cmdDecide(argv) {
@@ -226,6 +290,29 @@ function cmdDecide(argv) {
   if (!flags.text || flags.text === true) die('--text is required');
   const { state, path } = loadState(slug);
   appendDecision(state, flags.phase, flags.text);
+  // On ship-decision, the session is "done" — try to upgrade any
+  // stale-branch diff URL (compare/main...feat-branch) to a stable PR URL
+  // before the head ref disappears under us. The branch is the most common
+  // thing to vanish: PR #10 merged with --delete-branch and the diff link
+  // 404'd. Best-effort: if `gh` isn't installed or no PR matches, leave the
+  // existing URL alone and emit a stderr hint.
+  if (flags.phase === 'ship') {
+    const url = state.ship.diffUrl;
+    if (url && url.includes('/compare/')) {
+      const repoMeta = parseGithubOwnerRepo(state.repo);
+      const stable = repoMeta
+        ? detectPrUrl({ owner: repoMeta.owner, repo: repoMeta.repo, branch: state.branch })
+        : null;
+      if (stable) {
+        setDiffUrl(state, stable);
+        process.stderr.write(`vibesift: updated diff URL to ${stable}\n`);
+      } else {
+        process.stderr.write(
+          `vibesift: diff URL still points at branch ref; consider 'vibesift ship ${slug} diff <url>' to set a stable URL\n`
+        );
+      }
+    }
+  }
   const r = saveAndCommit(state, path, `vibesift: decision (${flags.phase}) on ${slug}`, { commit: !flags['no-commit'] });
   reportCommit(r, `decision recorded in ${flags.phase}`);
 }

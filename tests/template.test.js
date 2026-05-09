@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   emptyState, addConstraint, appendDecision, addOption,
-  addTask, markTaskDone, advancePhase,
+  addTask, markTaskDone, advancePhase, setDiffUrl,
 } from '../src/state.js';
 import { renderHTML } from '../src/template.js';
 
@@ -118,6 +118,21 @@ test('renderRecord falls back to char-truncation when no sentence boundary found
   // rather than the exact cut-point so the test is robust to small wording changes.
   assert.match(html, /<summary>a long single-clause constraint with absolutely no sentence terminator/);
   assert.match(html, /…<\/summary>/);
+});
+
+test('diff link renders only when diffUrl is set', () => {
+  const withUrl = emptyState({ slug: 'a', title: 'A' });
+  setDiffUrl(withUrl, 'https://github.com/o/r/pull/42');
+  const htmlWith = renderHTML(withUrl);
+  assert.match(htmlWith, /class="diff-link"/);
+  assert.match(htmlWith, /href="https:\/\/github\.com\/o\/r\/pull\/42"/);
+  assert.match(htmlWith, /View diff/);
+
+  const without = emptyState({ slug: 'b', title: 'B' });
+  assert.equal(without.ship.diffUrl, null);
+  const htmlWithout = renderHTML(without);
+  assert.doesNotMatch(htmlWithout, /class="diff-link"/);
+  assert.doesNotMatch(htmlWithout, /View diff/);
 });
 
 test('task with agent renders the .task-agent badge', () => {
