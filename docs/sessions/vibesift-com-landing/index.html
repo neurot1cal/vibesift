@@ -204,7 +204,7 @@
       <h3>Problem</h3>
       <p class="problem">docs/index.html is the bootstrap placeholder. First-time visitors at vibesift.com see &#39;No sessions yet&#39; and zero context about the project — no description, no Scope→Sift→Ship explainer, no link to the GitHub repo, no list of actual sessions. The placeholder shipped because v0.1 used the bootstrap template as a stub; the landing page is now its own feature.</p>
       <h3>Constraints</h3>
-      <ul class="constraints"><li>Static HTML at docs/index.html, no build step or framework — matches the zero-runtime-deps philosophy of the rest of the project.</li><li>First-30-seconds test: a visitor must learn what vibesift is, what the three verbs (Scope, Sift, Ship) mean, and where to find sessions, without scrolling past the fold on a phone.</li><li>Must list actual sessions present in docs/sessions/, not the placeholder &#39;No sessions yet&#39; string. Auto-generation can be v0.2; for now the list can be hand-maintained alongside the canonical dogfood session.</li><li>Must link to the GitHub repo (neurot1cal/vibesift), npm package (when published), and the canonical dogfood session at /sessions/v0-1-launch/.</li></ul>
+      <ul class="constraints"><li>Static HTML at docs/index.html, no build step or framework — matches the zero-runtime-deps philosophy of the rest of the project.</li><li>First-30-seconds test: a visitor must learn what vibesift is, what the three verbs (Scope, Sift, Ship) mean, and where to find sessions, without scrolling past the fold on a phone.</li><li>Must list actual sessions present in docs/sessions/, not the placeholder &#39;No sessions yet&#39; string. Auto-generation can be v0.2; for now the list can be hand-maintained alongside the canonical dogfood session.</li><li>Must link to the GitHub repo (neurot1cal/vibesift), npm package (when published), and the canonical dogfood session at /sessions/v0-1-launch/.</li><li>Must match the existing dark/light theme variables already defined in src/template.js so the landing and the session pages feel like one product, not two sites.</li></ul>
       <p class="pending">Pending decision.</p>
     </section>
 
@@ -234,14 +234,15 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "scope",
   "createdAt": 1778353301743,
-  "updatedAt": 1778353329662,
+  "updatedAt": 1778353329783,
   "scope": {
     "problem": "docs/index.html is the bootstrap placeholder. First-time visitors at vibesift.com see 'No sessions yet' and zero context about the project — no description, no Scope→Sift→Ship explainer, no link to the GitHub repo, no list of actual sessions. The placeholder shipped because v0.1 used the bootstrap template as a stub; the landing page is now its own feature.",
     "constraints": [
       "Static HTML at docs/index.html, no build step or framework — matches the zero-runtime-deps philosophy of the rest of the project.",
       "First-30-seconds test: a visitor must learn what vibesift is, what the three verbs (Scope, Sift, Ship) mean, and where to find sessions, without scrolling past the fold on a phone.",
       "Must list actual sessions present in docs/sessions/, not the placeholder 'No sessions yet' string. Auto-generation can be v0.2; for now the list can be hand-maintained alongside the canonical dogfood session.",
-      "Must link to the GitHub repo (neurot1cal/vibesift), npm package (when published), and the canonical dogfood session at /sessions/v0-1-launch/."
+      "Must link to the GitHub repo (neurot1cal/vibesift), npm package (when published), and the canonical dogfood session at /sessions/v0-1-launch/.",
+      "Must match the existing dark/light theme variables already defined in src/template.js so the landing and the session pages feel like one product, not two sites."
     ],
     "decision": null,
     "decidedAt": null
