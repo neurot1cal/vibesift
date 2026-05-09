@@ -263,7 +263,7 @@
     <section id="sift" class="phase">
       <h2>Sift</h2>
       <h3>Options considered</h3>
-      <ul class="options"><li><details class="record"><summary>Sequential: one feature at a time, three commits to one branch, one PR.</summary><div class="record-body">Sequential: one feature at a time, three commits to one branch, one PR. Slow but no merge-conflict risk.</div></details></li></ul>
+      <ul class="options"><li><details class="record"><summary>Sequential: one feature at a time, three commits to one branch, one PR.</summary><div class="record-body">Sequential: one feature at a time, three commits to one branch, one PR. Slow but no merge-conflict risk.</div></details></li><li><details class="record"><summary>Parallel via 3 worktrees + 3 subagents + 3 PRs.</summary><div class="record-body">Parallel via 3 worktrees + 3 subagents + 3 PRs. Demonstrates the parallel pattern as we ship it. Conflict risk is on src/cli.js (all three touch it); resolve at merge time.</div></details></li></ul>
       <p class="pending">No selection yet.</p>
     </section>
 
@@ -298,7 +298,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "sift",
   "createdAt": 1778354934973,
-  "updatedAt": 1778354961236,
+  "updatedAt": 1778354961356,
   "scope": {
     "problem": "Today vibesift CLI is purely serial. Every mutation auto-commits with no preview-before-commit option (gap surfaced in the v0.1 session). The landing sessions list is hand-maintained and goes stale. Ship-phase tasks have no way to attribute work to a specific agent or capture parallel-team execution. Block-level commenting is also queued but is significantly more work (needs a worker + auth) and is deferred to v0.3.",
     "constraints": [
@@ -316,6 +316,10 @@
       {
         "text": "Sequential: one feature at a time, three commits to one branch, one PR. Slow but no merge-conflict risk.",
         "addedAt": 1778354961236
+      },
+      {
+        "text": "Parallel via 3 worktrees + 3 subagents + 3 PRs. Demonstrates the parallel pattern as we ship it. Conflict risk is on src/cli.js (all three touch it); resolve at merge time.",
+        "addedAt": 1778354961356
       }
     ],
     "decision": null,
