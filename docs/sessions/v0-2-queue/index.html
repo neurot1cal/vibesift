@@ -252,7 +252,7 @@
       <h3>Problem</h3>
       <div class="problem"><details class="record"><summary>Today vibesift CLI is purely serial.</summary><div class="record-body">Today vibesift CLI is purely serial. Every mutation auto-commits with no preview-before-commit option (gap surfaced in the v0.1 session). The landing sessions list is hand-maintained and goes stale. Ship-phase tasks have no way to attribute work to a specific agent or capture parallel-team execution. Block-level commenting is also queued but is significantly more work (needs a worker + auth) and is deferred to v0.3.</div></details></div>
       <h3>Constraints</h3>
-      <ul class="constraints"><li><details class="record"><summary>Each feature ships as its own independently-mergeable PR.</summary><div class="record-body">Each feature ships as its own independently-mergeable PR. No bundled mega-PR; one PR per work-stream so we can demo the parallel-shipping pattern.</div></details></li><li><details class="record"><summary>All 22 existing tests must keep passing on every CI matrix entry.</summary><div class="record-body">All 22 existing tests must keep passing on every CI matrix entry. New features add tests; nothing regresses.</div></details></li></ul>
+      <ul class="constraints"><li><details class="record"><summary>Each feature ships as its own independently-mergeable PR.</summary><div class="record-body">Each feature ships as its own independently-mergeable PR. No bundled mega-PR; one PR per work-stream so we can demo the parallel-shipping pattern.</div></details></li><li><details class="record"><summary>All 22 existing tests must keep passing on every CI matrix entry.</summary><div class="record-body">All 22 existing tests must keep passing on every CI matrix entry. New features add tests; nothing regresses.</div></details></li><li><details class="record"><summary>Zero new runtime dependencies.</summary><div class="record-body">Zero new runtime dependencies. The &#39;pure Node CLI, no deps&#39; brand promise stands.</div></details></li></ul>
       <p class="pending">Pending decision.</p>
     </section>
 
@@ -282,12 +282,13 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "scope",
   "createdAt": 1778354934973,
-  "updatedAt": 1778354960500,
+  "updatedAt": 1778354960638,
   "scope": {
     "problem": "Today vibesift CLI is purely serial. Every mutation auto-commits with no preview-before-commit option (gap surfaced in the v0.1 session). The landing sessions list is hand-maintained and goes stale. Ship-phase tasks have no way to attribute work to a specific agent or capture parallel-team execution. Block-level commenting is also queued but is significantly more work (needs a worker + auth) and is deferred to v0.3.",
     "constraints": [
       "Each feature ships as its own independently-mergeable PR. No bundled mega-PR; one PR per work-stream so we can demo the parallel-shipping pattern.",
-      "All 22 existing tests must keep passing on every CI matrix entry. New features add tests; nothing regresses."
+      "All 22 existing tests must keep passing on every CI matrix entry. New features add tests; nothing regresses.",
+      "Zero new runtime dependencies. The 'pure Node CLI, no deps' brand promise stands."
     ],
     "decision": null,
     "decidedAt": null
