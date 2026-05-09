@@ -297,7 +297,15 @@ function cmdBootstrap() {
   const dir = join(root, 'docs', 'sessions');
   mkdirSync(dir, { recursive: true });
   const indexPath = join(root, 'docs', 'index.html');
-  if (!existsSync(indexPath)) writeFileSync(indexPath, INDEX_TEMPLATE);
+  // writeFileSync with flag 'wx' = write-exclusive: atomic, fails if the
+  // file already exists. Eliminates the TOCTOU race between existsSync()
+  // and writeFileSync() that CodeQL js/file-system-race flagged.
+  try {
+    writeFileSync(indexPath, INDEX_TEMPLATE, { flag: 'wx' });
+  } catch (e) {
+    if (e.code !== 'EEXIST') throw e;
+    // File already exists; leave it alone (preserves any manual edits).
+  }
   const r = autoCommit({
     paths: [indexPath],
     message: 'vibesift: bootstrap docs/sessions',
