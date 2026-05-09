@@ -216,7 +216,12 @@
       <h2>Sift</h2>
       <h3>Options considered</h3>
       <ul class="options"><li>Markdown spec + SSG</li><li>Notion-style hosted SaaS</li><li>Static HTML written directly by the CLI</li></ul>
-      <p class="pending">No selection yet.</p>
+      <div class="decision">
+         <span class="decision-label">Chose</span>
+         <p>Static HTML written directly by the CLI</p>
+         <p class="rationale">Static HTML matches the read-only-status-broadcast thesis without standing up infra; SSG adds a build step we don&#39;t need</p>
+         <span class="decision-time">2026-05-09 18:18 UTC</span>
+       </div>
     </section>
 
     <section id="ship" class="phase">
@@ -237,6 +242,12 @@
             <span class="log-time">2026-05-09 18:18 UTC</span>
           </li>
         
+          <li>
+            <span class="log-phase">Sift</span>
+            <span class="log-text">Static HTML written directly by the CLI</span>
+            <span class="log-time">2026-05-09 18:18 UTC</span>
+          </li>
+        
       </ol>
     </section>
 </main>
@@ -250,7 +261,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "sift",
   "createdAt": 1778350672560,
-  "updatedAt": 1778350695086,
+  "updatedAt": 1778350699468,
   "scope": {
     "problem": "Need a status page primitive for terminal-driven agentic flows that reads on a phone.",
     "constraints": [
@@ -277,9 +288,9 @@
         "addedAt": 1778350694966
       }
     ],
-    "decision": null,
+    "decision": "Static HTML written directly by the CLI",
     "rationale": "Static HTML matches the read-only-status-broadcast thesis without standing up infra; SSG adds a build step we don't need",
-    "decidedAt": null
+    "decidedAt": 1778350699468
   },
   "ship": {
     "tasks": [],
@@ -291,6 +302,11 @@
       "phase": "scope",
       "text": "JSON-in-script-tag state, inline CSS, dual MIT/Apache-2.0",
       "decidedAt": 1778350686599
+    },
+    {
+      "phase": "sift",
+      "text": "Static HTML written directly by the CLI",
+      "decidedAt": 1778350699468
     }
   ]
 }
