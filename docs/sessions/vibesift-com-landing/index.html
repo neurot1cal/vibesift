@@ -227,7 +227,12 @@
     <section id="ship" class="phase">
       <h2>Ship</h2>
       <h3>Tasks</h3>
-      <p class="empty">No tasks yet.</p>
+      <ul class="tasks">
+        <li class="task-todo">
+          <span class="task-mark">·</span>
+          <span class="task-text">Read src/template.js — copy the exact :root and [data-theme=light] CSS variables so the landing and session pages share one design system.</span>
+        </li>
+      </ul>
       <p><a class="diff-link" href="https://github.com/neurot1cal/vibesift/compare/main...feat/vibesift-com-landing">View diff →</a></p>
       
     </section>
@@ -261,7 +266,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "ship",
   "createdAt": 1778353301743,
-  "updatedAt": 1778353376820,
+  "updatedAt": 1778353376951,
   "scope": {
     "problem": "docs/index.html is the bootstrap placeholder. First-time visitors at vibesift.com see 'No sessions yet' and zero context about the project — no description, no Scope→Sift→Ship explainer, no link to the GitHub repo, no list of actual sessions. The placeholder shipped because v0.1 used the bootstrap template as a stub; the landing page is now its own feature.",
     "constraints": [
@@ -295,7 +300,13 @@
     "decidedAt": 1778353354805
   },
   "ship": {
-    "tasks": [],
+    "tasks": [
+      {
+        "id": 1,
+        "text": "Read src/template.js — copy the exact :root and [data-theme=light] CSS variables so the landing and session pages share one design system.",
+        "done": false
+      }
+    ],
     "diffUrl": "https://github.com/neurot1cal/vibesift/compare/main...feat/vibesift-com-landing",
     "shippedAt": null
   },
