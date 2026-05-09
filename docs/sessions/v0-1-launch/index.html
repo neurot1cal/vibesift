@@ -1,135 +1,12 @@
-// HTML generator. Self-contained: inline CSS, no CDN, no JS framework.
-// The page is fully readable offline. State lives in a script tag at the
-// bottom for the CLI to round-trip.
-
-import { PHASES } from './state.js';
-
-const escapeHtml = s =>
-  String(s).replace(/[&<>"']/g, c => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  }[c]));
-
-const fmtDate = ts => {
-  if (!ts) return '';
-  const d = new Date(ts);
-  return d.toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
-};
-
-const phaseLabel = {
-  scope: 'Scope',
-  sift: 'Sift',
-  ship: 'Ship',
-};
-
-function statusBadge(state) {
-  if (state.ship.shippedAt) return { text: 'Shipped', tone: 'shipped' };
-  const i = PHASES.indexOf(state.phase);
-  if (i === 2) return { text: 'Shipping', tone: 'active' };
-  if (i === 1) return { text: 'Sifting', tone: 'active' };
-  return { text: 'Scoping', tone: 'active' };
-}
-
-function nav(state) {
-  return PHASES.map(p => {
-    const active = p === state.phase;
-    const done = PHASES.indexOf(p) < PHASES.indexOf(state.phase) ||
-                 (p === 'ship' && state.ship.shippedAt);
-    const cls = active ? 'nav-item nav-active' : done ? 'nav-item nav-done' : 'nav-item';
-    return `<a href="#${p}" class="${cls}">${phaseLabel[p]}</a>`;
-  }).join('');
-}
-
-function scopeSection(state) {
-  const s = state.scope;
-  const constraints = s.constraints.length
-    ? `<ul class="constraints">${s.constraints.map(c => `<li>${escapeHtml(c)}</li>`).join('')}</ul>`
-    : '<p class="empty">No constraints recorded.</p>';
-  const decision = s.decision
-    ? `<div class="decision">
-         <span class="decision-label">Decision</span>
-         <p>${escapeHtml(s.decision)}</p>
-         <span class="decision-time">${fmtDate(s.decidedAt)}</span>
-       </div>`
-    : '<p class="pending">Pending decision.</p>';
-  return `
-    <section id="scope" class="phase">
-      <h2>Scope</h2>
-      <h3>Problem</h3>
-      <p class="problem">${s.problem ? escapeHtml(s.problem) : '<em class="empty">Not set.</em>'}</p>
-      <h3>Constraints</h3>
-      ${constraints}
-      ${decision}
-    </section>`;
-}
-
-function siftSection(state) {
-  const s = state.sift;
-  const options = s.options.length
-    ? `<ul class="options">${s.options.map(o => `<li>${escapeHtml(o.text)}</li>`).join('')}</ul>`
-    : '<p class="empty">No options yet.</p>';
-  const decision = s.decision
-    ? `<div class="decision">
-         <span class="decision-label">Chose</span>
-         <p>${escapeHtml(s.decision)}</p>
-         ${s.rationale ? `<p class="rationale">${escapeHtml(s.rationale)}</p>` : ''}
-         <span class="decision-time">${fmtDate(s.decidedAt)}</span>
-       </div>`
-    : '<p class="pending">No selection yet.</p>';
-  return `
-    <section id="sift" class="phase">
-      <h2>Sift</h2>
-      <h3>Options considered</h3>
-      ${options}
-      ${decision}
-    </section>`;
-}
-
-function shipSection(state) {
-  const s = state.ship;
-  const tasks = s.tasks.length
-    ? `<ul class="tasks">${s.tasks.map(t => `
-        <li class="${t.done ? 'task-done' : 'task-todo'}">
-          <span class="task-mark">${t.done ? '✓' : '·'}</span>
-          <span class="task-text">${escapeHtml(t.text)}</span>
-        </li>
-      `).join('')}</ul>`
-    : '<p class="empty">No tasks yet.</p>';
-  const diff = s.diffUrl
-    ? `<p><a class="diff-link" href="${escapeHtml(s.diffUrl)}">View diff →</a></p>`
-    : '';
-  const shipped = s.shippedAt
-    ? `<p class="shipped">Shipped ${fmtDate(s.shippedAt)}.</p>`
-    : '';
-  return `
-    <section id="ship" class="phase">
-      <h2>Ship</h2>
-      <h3>Tasks</h3>
-      ${tasks}
-      ${diff}
-      ${shipped}
-    </section>`;
-}
-
-function decisionsLog(state) {
-  if (!state.decisions.length) return '';
-  return `
-    <section class="log">
-      <h2>Decision log</h2>
-      <ol>
-        ${state.decisions.map(d => `
-          <li>
-            <span class="log-phase">${phaseLabel[d.phase] ?? d.phase}</span>
-            <span class="log-text">${escapeHtml(d.text)}</span>
-            <span class="log-time">${fmtDate(d.decidedAt)}</span>
-          </li>
-        `).join('')}
-      </ol>
-    </section>`;
-}
-
-// Brand palette — see BRAND.md for tokens. Both themes share the same
-// accent + semantic colors; only neutrals invert.
-const STYLES = `
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="vibesift">
+<meta name="robots" content="noindex">
+<title>Ship vibesift v0.1</title>
+<style>
   :root {
     color-scheme: dark light;
 
@@ -305,12 +182,207 @@ const STYLES = `
     letter-spacing: 0.08em;
   }
   .theme-toggle:hover { border-color: var(--accent); color: var(--text); }
-`;
+</style>
+</head>
+<body>
+<header>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">◐ DARK</button>
+  <div class="brand-mark">vibesift · v0-1-launch</div>
+  <h1>Ship vibesift v0.1</h1>
+  <div class="meta-line">
+    <span class="badge badge-active">Shipping</span>
+    <span><a href="https://github.com/neurot1cal/vibesift">github.com/neurot1cal/vibesift</a></span>
+    <span>branch: <code>brand-and-dogfood</code></span>
+    <span class="meta">updated 2026-05-09 18:18 UTC</span>
+  </div>
+</header>
+<nav><a href="#scope" class="nav-item nav-done">Scope</a><a href="#sift" class="nav-item nav-done">Sift</a><a href="#ship" class="nav-item nav-active">Ship</a></nav>
+<main>
 
-// Inline JS — toggle dark/light, persist choice in localStorage, respect
-// prefers-color-scheme on first load. Kept tiny on purpose; this is the
-// only JS the page ever ships.
-const THEME_SCRIPT = `
+    <section id="scope" class="phase">
+      <h2>Scope</h2>
+      <h3>Problem</h3>
+      <p class="problem">Need a status page primitive for terminal-driven agentic flows that reads on a phone.</p>
+      <h3>Constraints</h3>
+      <ul class="constraints"><li>static HTML in docs/sessions/, served by GitHub Pages</li><li>zero runtime dependencies</li><li>cross-harness skill via single canonical SKILL.md</li><li>auto-commit each phase change</li></ul>
+      <div class="decision">
+         <span class="decision-label">Decision</span>
+         <p>JSON-in-script-tag state, inline CSS, dual MIT/Apache-2.0</p>
+         <span class="decision-time">2026-05-09 18:18 UTC</span>
+       </div>
+    </section>
+
+    <section id="sift" class="phase">
+      <h2>Sift</h2>
+      <h3>Options considered</h3>
+      <ul class="options"><li>Markdown spec + SSG</li><li>Notion-style hosted SaaS</li><li>Static HTML written directly by the CLI</li></ul>
+      <div class="decision">
+         <span class="decision-label">Chose</span>
+         <p>Static HTML written directly by the CLI</p>
+         <p class="rationale">Static HTML matches the read-only-status-broadcast thesis without standing up infra; SSG adds a build step we don&#39;t need</p>
+         <span class="decision-time">2026-05-09 18:18 UTC</span>
+       </div>
+    </section>
+
+    <section id="ship" class="phase">
+      <h2>Ship</h2>
+      <h3>Tasks</h3>
+      <ul class="tasks">
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          <span class="task-text">Scaffold CLI: init, scope, sift, ship, decide, advance, status, list, bootstrap</span>
+        </li>
+      
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          <span class="task-text">HTML template with dark/light mode toggle</span>
+        </li>
+      
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          <span class="task-text">Cross-harness install command</span>
+        </li>
+      
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          <span class="task-text">Test suite: 17 unit tests + matrix CI</span>
+        </li>
+      
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          <span class="task-text">Governance: dual license, CONTRIBUTING, SECURITY, dependabot</span>
+        </li>
+      
+        <li class="task-todo">
+          <span class="task-mark">·</span>
+          <span class="task-text">Brand schema + asciinema casts</span>
+        </li>
+      
+        <li class="task-todo">
+          <span class="task-mark">·</span>
+          <span class="task-text">Dogfood vibesift on its own repo (this session)</span>
+        </li>
+      </ul>
+      <p><a class="diff-link" href="https://github.com/neurot1cal/vibesift/compare/main...brand-and-dogfood">View diff →</a></p>
+      
+    </section>
+
+    <section class="log">
+      <h2>Decision log</h2>
+      <ol>
+        
+          <li>
+            <span class="log-phase">Scope</span>
+            <span class="log-text">JSON-in-script-tag state, inline CSS, dual MIT/Apache-2.0</span>
+            <span class="log-time">2026-05-09 18:18 UTC</span>
+          </li>
+        
+          <li>
+            <span class="log-phase">Sift</span>
+            <span class="log-text">Static HTML written directly by the CLI</span>
+            <span class="log-time">2026-05-09 18:18 UTC</span>
+          </li>
+        
+      </ol>
+    </section>
+</main>
+<footer>generated by <a href="https://github.com/vibesift/vibesift">vibesift</a> · this page is read-only · the terminal drives the flow</footer>
+<script type="application/json" id="vibesift-state">
+{
+  "schemaVersion": 1,
+  "slug": "v0-1-launch",
+  "title": "Ship vibesift v0.1",
+  "branch": "brand-and-dogfood",
+  "repo": "https://github.com/neurot1cal/vibesift",
+  "phase": "ship",
+  "createdAt": 1778350672560,
+  "updatedAt": 1778350714846,
+  "scope": {
+    "problem": "Need a status page primitive for terminal-driven agentic flows that reads on a phone.",
+    "constraints": [
+      "static HTML in docs/sessions/, served by GitHub Pages",
+      "zero runtime dependencies",
+      "cross-harness skill via single canonical SKILL.md",
+      "auto-commit each phase change"
+    ],
+    "decision": "JSON-in-script-tag state, inline CSS, dual MIT/Apache-2.0",
+    "decidedAt": 1778350686599
+  },
+  "sift": {
+    "options": [
+      {
+        "text": "Markdown spec + SSG",
+        "addedAt": 1778350694721
+      },
+      {
+        "text": "Notion-style hosted SaaS",
+        "addedAt": 1778350694842
+      },
+      {
+        "text": "Static HTML written directly by the CLI",
+        "addedAt": 1778350694966
+      }
+    ],
+    "decision": "Static HTML written directly by the CLI",
+    "rationale": "Static HTML matches the read-only-status-broadcast thesis without standing up infra; SSG adds a build step we don't need",
+    "decidedAt": 1778350699468
+  },
+  "ship": {
+    "tasks": [
+      {
+        "id": 1,
+        "text": "Scaffold CLI: init, scope, sift, ship, decide, advance, status, list, bootstrap",
+        "done": true
+      },
+      {
+        "id": 2,
+        "text": "HTML template with dark/light mode toggle",
+        "done": true
+      },
+      {
+        "id": 3,
+        "text": "Cross-harness install command",
+        "done": true
+      },
+      {
+        "id": 4,
+        "text": "Test suite: 17 unit tests + matrix CI",
+        "done": true
+      },
+      {
+        "id": 5,
+        "text": "Governance: dual license, CONTRIBUTING, SECURITY, dependabot",
+        "done": true
+      },
+      {
+        "id": 6,
+        "text": "Brand schema + asciinema casts",
+        "done": false
+      },
+      {
+        "id": 7,
+        "text": "Dogfood vibesift on its own repo (this session)",
+        "done": false
+      }
+    ],
+    "diffUrl": "https://github.com/neurot1cal/vibesift/compare/main...brand-and-dogfood",
+    "shippedAt": null
+  },
+  "decisions": [
+    {
+      "phase": "scope",
+      "text": "JSON-in-script-tag state, inline CSS, dual MIT/Apache-2.0",
+      "decidedAt": 1778350686599
+    },
+    {
+      "phase": "sift",
+      "text": "Static HTML written directly by the CLI",
+      "decidedAt": 1778350699468
+    }
+  ]
+}
+</script>
+<script>
 (function(){
   var KEY='vibesift:theme';
   var root=document.documentElement;
@@ -330,61 +402,6 @@ const THEME_SCRIPT = `
     if (btn) btn.textContent = t === 'light' ? '◐ DARK' : '◑ LIGHT';
   }
 })();
-`;
-
-export function renderHTML(state) {
-  const badge = statusBadge(state);
-  const branchLine = state.branch
-    ? `<span>branch: <code>${escapeHtml(state.branch)}</code></span>`
-    : '';
-  const repoLine = state.repo
-    ? `<span><a href="${escapeHtml(state.repo)}">${escapeHtml(state.repo.replace(/^https?:\/\//, ''))}</a></span>`
-    : '';
-  // Escape JSON for safe embedding in <script type="application/json">.
-  // Plain JSON.stringify does NOT encode `</script>` or `<!--`, both of
-  // which would break out of the script block and execute as HTML/JS.
-  // Replace `<`, `>`, `&` with their JSON \uXXXX forms — JSON parsers
-  // accept these natively, but the HTML parser sees no metacharacters.
-  // OWASP-recommended pattern for JSON-in-HTML.
-  const safeJson = JSON.stringify(state, null, 2)
-    .replace(/</g, '\\u003c')
-    .replace(/>/g, '\\u003e')
-    .replace(/&/g, '\\u0026');
-  return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="generator" content="vibesift">
-<meta name="robots" content="noindex">
-<title>${escapeHtml(state.title)}</title>
-<style>${STYLES}</style>
-</head>
-<body>
-<header>
-  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">◐ DARK</button>
-  <div class="brand-mark">vibesift · ${escapeHtml(state.slug)}</div>
-  <h1>${escapeHtml(state.title)}</h1>
-  <div class="meta-line">
-    <span class="badge badge-${badge.tone}">${badge.text}</span>
-    ${repoLine}
-    ${branchLine}
-    <span class="meta">updated ${fmtDate(state.updatedAt)}</span>
-  </div>
-</header>
-<nav>${nav(state)}</nav>
-<main>
-${scopeSection(state)}
-${siftSection(state)}
-${shipSection(state)}
-${decisionsLog(state)}
-</main>
-<footer>generated by <a href="https://github.com/vibesift/vibesift">vibesift</a> · this page is read-only · the terminal drives the flow</footer>
-<script type="application/json" id="vibesift-state">
-${safeJson}
 </script>
-<script>${THEME_SCRIPT}</script>
 </body>
 </html>
-`;
-}

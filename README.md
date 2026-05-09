@@ -1,4 +1,15 @@
-# vibesift
+<pre>
+██╗   ██╗██╗██████╗ ███████╗███████╗██╗███████╗████████╗
+██║   ██║██║██╔══██╗██╔════╝██╔════╝██║██╔════╝╚══██╔══╝
+██║   ██║██║██████╔╝█████╗  ███████╗██║█████╗     ██║
+╚██╗ ██╔╝██║██╔══██╗██╔══╝  ╚════██║██║██╔══╝     ██║
+ ╚████╔╝ ██║██████╔╝███████╗███████║██║██║        ██║
+  ╚═══╝  ╚═╝╚═════╝ ╚══════╝╚══════╝╚═╝╚═╝        ╚═╝
+
+Scope.  Sift.  Ship.
+</pre>
+
+> ![full lifecycle demo](assets/asciinema/casts/full.gif)
 
 > **Scope. Sift. Ship.** Static HTML status pages for terminal-driven agentic flows.
 
@@ -103,6 +114,10 @@ vibesift list                                # list every session in this repo
 
 Enable GitHub Pages on `/docs` of your default branch and the page is live at
 `https://<owner>.github.io/<repo>/sessions/blue-widget/` within a minute.
+
+**See vibesift dogfooding itself:** [docs/sessions/v0-1-launch/](docs/sessions/v0-1-launch/index.html)
+(once you enable GitHub Pages on `/docs`, this will be live at
+`https://neurot1cal.github.io/vibesift/sessions/v0-1-launch/`)
 
 ## Cross-harness skill
 
