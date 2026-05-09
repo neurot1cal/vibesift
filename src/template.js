@@ -117,12 +117,18 @@ function siftSection(state) {
 function shipSection(state) {
   const s = state.ship;
   const tasks = s.tasks.length
-    ? `<ul class="tasks">${s.tasks.map(t => `
+    ? `<ul class="tasks">${s.tasks.map(t => {
+        const agentBadge = t.agent
+          ? `<span class="task-agent">${escapeHtml(t.agent)}</span>`
+          : '';
+        return `
         <li class="${t.done ? 'task-done' : 'task-todo'}">
           <span class="task-mark">${t.done ? '✓' : '·'}</span>
+          ${agentBadge}
           <span class="task-text">${escapeHtml(t.text)}</span>
         </li>
-      `).join('')}</ul>`
+      `;
+      }).join('')}</ul>`
     : '<p class="empty">No tasks yet.</p>';
   const diff = s.diffUrl
     ? `<p><a class="diff-link" href="${escapeHtml(s.diffUrl)}">View diff →</a></p>`
@@ -341,6 +347,20 @@ const STYLES = `
   .task-todo .task-mark { color: var(--text-faint); }
   .task-done .task-mark { color: var(--positive); }
   .task-done .task-text { color: var(--text-faint); text-decoration: line-through; }
+  .task-agent {
+    display: inline-block;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", monospace;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.0625rem 0.375rem;
+    margin-right: 0.375rem;
+    vertical-align: 1px;
+  }
   .diff-link {
     display: inline-block;
     margin-top: 0.5rem;
