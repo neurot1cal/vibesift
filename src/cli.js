@@ -15,6 +15,7 @@ import {
   autoCommit, parseGithubOwnerRepo, diffUrl,
 } from './git.js';
 import { install, listHarnesses } from './install.js';
+import { regenerateLandingIndex } from './index-renderer.js';
 
 const HELP = `vibesift — Scope, Sift, Ship.
 
@@ -31,6 +32,7 @@ Commands
   vibesift render <slug> [--no-commit]   (re-render HTML from existing state — use after template upgrades)
   vibesift status <slug>
   vibesift list
+  vibesift index       (regenerates the landing's sessions list from docs/sessions/)
   vibesift bootstrap   (run once per repo: scaffolds docs/sessions/ + index.html)
   vibesift install     (symlinks the skill into every detected agent harness)
   vibesift harnesses   (lists detected agent harnesses)
@@ -457,6 +459,26 @@ function cmdHarnesses() {
   }
 }
 
+function cmdIndex() {
+  const root = repoRoot();
+  if (!root) die('not in a git repository');
+  let result;
+  try {
+    result = regenerateLandingIndex({ repoRoot: root });
+  } catch (e) {
+    die(e.message);
+  }
+  if (!result.changed) {
+    process.stdout.write(`landing already in sync (${result.sessions.length} session${result.sessions.length === 1 ? '' : 's'})\n`);
+    return;
+  }
+  const r = autoCommit({
+    paths: [result.path],
+    message: 'vibesift: index regenerated',
+  });
+  reportCommit(r, `index regenerated (${result.sessions.length} session${result.sessions.length === 1 ? '' : 's'})`);
+}
+
 function cmdBootstrap() {
   const root = repoRoot();
   if (!root) die('not in a git repository');
@@ -494,6 +516,7 @@ function main() {
     case 'render': return cmdRender(rest);
     case 'status': return cmdStatus(rest);
     case 'list': return cmdList();
+    case 'index': return cmdIndex();
     case 'bootstrap': return cmdBootstrap();
     case 'install': return cmdInstall(rest);
     case 'harnesses': return cmdHarnesses();

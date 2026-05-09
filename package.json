@@ -17,7 +17,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "node --test tests/state.test.js tests/template.test.js tests/cli-no-commit.test.js",
+    "test": "node --test tests/state.test.js tests/template.test.js tests/cli-no-commit.test.js tests/cli-index.test.js",
     "smoke": "node tests/smoke.js"
   },
   "engines": {
