@@ -193,7 +193,7 @@
     <span class="badge badge-active">Scoping</span>
     <span><a href="https://github.com/neurot1cal/vibesift">github.com/neurot1cal/vibesift</a></span>
     <span>branch: <code>feat/vibesift-com-landing</code></span>
-    <span class="meta">updated 2026-05-09 19:01 UTC</span>
+    <span class="meta">updated 2026-05-09 19:02 UTC</span>
   </div>
 </header>
 <nav><a href="#scope" class="nav-item nav-active">Scope</a><a href="#sift" class="nav-item">Sift</a><a href="#ship" class="nav-item">Ship</a></nav>
@@ -204,7 +204,7 @@
       <h3>Problem</h3>
       <p class="problem">docs/index.html is the bootstrap placeholder. First-time visitors at vibesift.com see &#39;No sessions yet&#39; and zero context about the project — no description, no Scope→Sift→Ship explainer, no link to the GitHub repo, no list of actual sessions. The placeholder shipped because v0.1 used the bootstrap template as a stub; the landing page is now its own feature.</p>
       <h3>Constraints</h3>
-      <p class="empty">No constraints recorded.</p>
+      <ul class="constraints"><li>Static HTML at docs/index.html, no build step or framework — matches the zero-runtime-deps philosophy of the rest of the project.</li></ul>
       <p class="pending">Pending decision.</p>
     </section>
 
@@ -234,10 +234,12 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "scope",
   "createdAt": 1778353301743,
-  "updatedAt": 1778353301743,
+  "updatedAt": 1778353329283,
   "scope": {
     "problem": "docs/index.html is the bootstrap placeholder. First-time visitors at vibesift.com see 'No sessions yet' and zero context about the project — no description, no Scope→Sift→Ship explainer, no link to the GitHub repo, no list of actual sessions. The placeholder shipped because v0.1 used the bootstrap template as a stub; the landing page is now its own feature.",
-    "constraints": [],
+    "constraints": [
+      "Static HTML at docs/index.html, no build step or framework — matches the zero-runtime-deps philosophy of the rest of the project."
+    ],
     "decision": null,
     "decidedAt": null
   },
