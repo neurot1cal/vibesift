@@ -298,7 +298,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "sift",
   "createdAt": 1778354934973,
-  "updatedAt": 1778354961477,
+  "updatedAt": 1778354961598,
   "scope": {
     "problem": "Today vibesift CLI is purely serial. Every mutation auto-commits with no preview-before-commit option (gap surfaced in the v0.1 session). The landing sessions list is hand-maintained and goes stale. Ship-phase tasks have no way to attribute work to a specific agent or capture parallel-team execution. Block-level commenting is also queued but is significantly more work (needs a worker + auth) and is deferred to v0.3.",
     "constraints": [
@@ -327,7 +327,7 @@
       }
     ],
     "decision": null,
-    "rationale": "",
+    "rationale": "Option B. The user explicitly asked for agent teams + a working session. Worktrees give each agent an isolated src/cli.js to edit; PR-time merge conflicts in CLI command-routing are mechanical and quick to resolve. Option A is safer but boring. Option C breaks the audit trail — if three agents auto-commit to the same branch in the same worktree, git races and the recorded session loses fidelity.",
     "decidedAt": null
   },
   "ship": {
