@@ -188,12 +188,23 @@ function updateBetweenMarkers(html, replacement) {
 // Public entry point. Reads docs/index.html, regenerates the sessions block
 // (migrating markers in on first run), and writes back. Returns metadata so
 // the CLI caller can decide whether to commit.
+//
+// Reads via try/catch on readFileSync rather than `existsSync` + `readFileSync`
+// to avoid the TOCTOU pattern CodeQL flags as `js/file-system-race`. The
+// project's convention (see src/cli.js bootstrap) is to let the fs operation
+// throw and translate ENOENT into a friendlier message, never gate writes on
+// a separate existsSync check.
 export function regenerateLandingIndex({ repoRoot }) {
   const indexPath = join(repoRoot, 'docs', 'index.html');
-  if (!existsSync(indexPath)) {
-    throw new Error(`docs/index.html not found at ${indexPath} — run \`vibesift bootstrap\` first`);
+  let before;
+  try {
+    before = readFileSync(indexPath, 'utf8');
+  } catch (e) {
+    if (e.code === 'ENOENT') {
+      throw new Error(`docs/index.html not found at ${indexPath} — run \`vibesift bootstrap\` first`);
+    }
+    throw e;
   }
-  const before = readFileSync(indexPath, 'utf8');
   let working = before;
   if (working.indexOf(START_MARKER) < 0 || working.indexOf(END_MARKER) < 0) {
     working = injectMarkersAndNotice(working);
