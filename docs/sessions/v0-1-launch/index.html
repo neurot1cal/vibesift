@@ -188,6 +188,20 @@
   .task-todo .task-mark { color: var(--text-faint); }
   .task-done .task-mark { color: var(--positive); }
   .task-done .task-text { color: var(--text-faint); text-decoration: line-through; }
+  .task-agent {
+    display: inline-block;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", monospace;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.0625rem 0.375rem;
+    margin-right: 0.375rem;
+    vertical-align: 1px;
+  }
   .diff-link {
     display: inline-block;
     margin-top: 0.5rem;
@@ -241,7 +255,7 @@
     <span class="badge badge-active">Shipping</span>
     <span><a href="https://github.com/neurot1cal/vibesift">github.com/neurot1cal/vibesift</a></span>
     <span>branch: <code>brand-and-dogfood</code></span>
-    <span class="meta">updated 2026-05-09 19:18 UTC</span>
+    <span class="meta">updated 2026-05-09 19:55 UTC</span>
   </div>
 </header>
 <nav><a href="#scope" class="nav-item nav-done">Scope</a><a href="#sift" class="nav-item nav-done">Sift</a><a href="#ship" class="nav-item nav-active">Ship</a></nav>
@@ -278,36 +292,43 @@
       <ul class="tasks">
         <li class="task-done">
           <span class="task-mark">✓</span>
+          
           <span class="task-text">Scaffold CLI: init, scope, sift, ship, decide, advance, status, list, bootstrap</span>
         </li>
       
         <li class="task-done">
           <span class="task-mark">✓</span>
+          
           <span class="task-text">HTML template with dark/light mode toggle</span>
         </li>
       
         <li class="task-done">
           <span class="task-mark">✓</span>
+          
           <span class="task-text">Cross-harness install command</span>
         </li>
       
         <li class="task-done">
           <span class="task-mark">✓</span>
+          
           <span class="task-text">Test suite: 17 unit tests + matrix CI</span>
         </li>
       
         <li class="task-done">
           <span class="task-mark">✓</span>
+          
           <span class="task-text">Governance: dual license, CONTRIBUTING, SECURITY, dependabot</span>
         </li>
       
         <li class="task-todo">
           <span class="task-mark">·</span>
+          
           <span class="task-text">Brand schema + asciinema casts</span>
         </li>
       
         <li class="task-todo">
           <span class="task-mark">·</span>
+          
           <span class="task-text">Dogfood vibesift on its own repo (this session)</span>
         </li>
       </ul>
@@ -344,7 +365,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "ship",
   "createdAt": 1778350672560,
-  "updatedAt": 1778354334666,
+  "updatedAt": 1778356520162,
   "scope": {
     "problem": "Need a status page primitive for terminal-driven agentic flows that reads on a phone.",
     "constraints": [
