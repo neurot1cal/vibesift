@@ -7,8 +7,9 @@ import { join, resolve } from 'node:path';
 import {
   emptyState, parseState, advancePhase, appendDecision,
   addOption, addConstraint, addTask, markTaskDone, setRationale, setDiffUrl,
-  markDeployed, PHASES,
+  markDeployed, applyImportedPlan, PHASES,
 } from './state.js';
+import { loadPlan, resolvePlanDir } from './importPlan.js';
 import { renderHTML } from './template.js';
 import {
   repoRoot, currentBranch, originUrl,
@@ -34,7 +35,10 @@ Commands
   vibesift status <slug>
   vibesift list
   vibesift index       (regenerates the landing's sessions list from docs/sessions/)
-  vibesift bootstrap [--force]   (run once per repo: scaffolds docs/sessions/ + index.html — fails on dirty tree unless --force)
+  vibesift import-plan <slug> [--from <plan-dir>] [--title "..."] [--no-commit]
+                       (read PRD + build-plan markdown from <plan-dir>, default ./plan,
+                        and render a visual checklist; idempotent on re-run)
+  vibesift bootstrap [--force]   (run once per repo: scaffolds docs/sessions/ + index.html. Fails on dirty tree unless --force.)
   vibesift install     (symlinks the skill into every detected agent harness)
   vibesift harnesses   (lists detected agent harnesses)
 
@@ -561,6 +565,88 @@ function cmdIndex() {
   reportCommit(r, `index regenerated (${result.sessions.length} session${result.sessions.length === 1 ? '' : 's'})`);
 }
 
+function cmdImportPlan(argv) {
+  const { _: pos, flags } = parseArgs(argv);
+  const slug = pos[0];
+  if (!slug || !SLUG_RE.test(slug)) {
+    die('usage: vibesift import-plan <slug> [--from <plan-dir>] [--title "..."] [--no-commit]');
+  }
+  const cwd = process.cwd();
+  const root = repoRoot(cwd);
+  if (!root) die('not in a git repository. Run from inside the repo you want to track.');
+
+  const planDir = resolvePlanDir(typeof flags.from === 'string' ? flags.from : null, cwd);
+  const result = loadPlan({ planDir, repoRoot: root });
+  if (!result.ok) die(result.reason);
+
+  // Surface what the parser saw so the user can sanity-check before opening
+  // the rendered page.
+  process.stderr.write(`vibesift: plan dir: ${planDir}\n`);
+  if (result.found.prdName) {
+    process.stderr.write(`vibesift: PRD:        ${result.found.prdName}  (problem ${result.prd.problem ? 'set' : 'empty'}, ${result.prd.goals.length} goals, ${result.prd.nonGoals.length} non-goals)\n`);
+  } else {
+    process.stderr.write('vibesift: PRD:        (none found)\n');
+  }
+  if (result.found.bpName) {
+    process.stderr.write(`vibesift: build plan: ${result.found.bpName}  (${result.buildPlan.milestones.length} milestones, ${result.buildPlan.tasks.length} tasks)\n`);
+  } else {
+    process.stderr.write('vibesift: build plan: (none found)\n');
+  }
+
+  const dir = join(sessionsDir(cwd), slug);
+  const path = join(dir, 'index.html');
+  const fresh = !existsSync(path);
+
+  let state;
+  if (fresh) {
+    mkdirSync(dir, { recursive: true });
+    const branch = currentBranch(cwd);
+    const repo = originUrl(cwd);
+    const title = (typeof flags.title === 'string' && flags.title)
+      || `Plan: ${slug}`;
+    state = emptyState({
+      slug, title,
+      problem: result.prd.problem || '',
+      branch, repo,
+    });
+    // Skip scope/sift and land directly in ship since the build plan IS the
+    // ship task list. The user can still go back and add constraints/options
+    // later.
+    state.phase = 'ship';
+  } else {
+    state = parseState(readFileSync(path, 'utf8'));
+  }
+
+  const merge = applyImportedPlan(state, {
+    prd: result.prd,
+    buildPlan: result.buildPlan,
+    prdPath: result.prdPath,
+    buildPlanPath: result.buildPlanPath,
+  });
+
+  writeFileSync(path, renderHTML(state));
+  const message = fresh
+    ? `vibesift: import-plan created ${slug}`
+    : `vibesift: import-plan refreshed ${slug} (+${merge.added}, ~${merge.updated})`;
+  if (flags['no-commit']) {
+    process.stderr.write('vibesift: --no-commit set, file written but not committed\n');
+  } else {
+    const r = autoCommit({ paths: [path], message });
+    reportCommit(r, fresh ? `created ${path}` : `refreshed ${slug}: +${merge.added} new, ${merge.updated} updated`);
+    // Align with v0.2.7+ behavior: every state mutation regenerates the
+    // landing index so the root sessions list stays fresh.
+    regenIndexAfterCommit(r);
+  }
+
+  // Final summary on stdout for shell pipelines / agent flows.
+  const total = state.ship.tasks.filter(t => t.milestone).length;
+  const done = state.ship.tasks.filter(t => t.milestone && t.done).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  process.stdout.write(`session: ${slug}\n`);
+  process.stdout.write(`status:  ${done}/${total} tasks complete (${pct}%)\n`);
+  process.stdout.write(`file:    docs/sessions/${slug}/index.html\n`);
+}
+
 function cmdBootstrap(argv = []) {
   const root = repoRoot();
   if (!root) die('not in a git repository');
@@ -627,6 +713,7 @@ function main() {
     case 'list': return cmdList();
     case 'index': return cmdIndex();
     case 'bootstrap': return cmdBootstrap(rest);
+    case 'import-plan': return cmdImportPlan(rest);
     case 'install': return cmdInstall(rest);
     case 'harnesses': return cmdHarnesses();
     default: die(`unknown command: ${cmd}\n\n${HELP}`);

@@ -130,22 +130,122 @@ function siftSection(state) {
     </section>`;
 }
 
+function renderTaskItem(t) {
+  const agentBadge = t.agent
+    ? `<span class="task-agent">${escapeHtml(t.agent)}</span>`
+    : '';
+  return `
+    <li class="${t.done ? 'task-done' : 'task-todo'}">
+      <span class="task-mark">${t.done ? '✓' : '·'}</span>
+      ${agentBadge}
+      <span class="task-text">${escapeHtml(t.text)}</span>
+    </li>
+  `;
+}
+
+// When tasks were imported from a build plan they carry milestone +
+// subMilestone fields. Render them grouped, with per-milestone counts and
+// the milestone-level note. Tasks without a milestone (hand-added via
+// `vibesift ship task add`) bucket under "Other".
+function renderGroupedTasks(tasks, planMilestones) {
+  // Bucket: milestone → subMilestone → tasks[]. Preserve the order tasks were
+  // added in, which matches the build-plan order on import.
+  const buckets = new Map();
+  const subOrder = new Map();
+  for (const t of tasks) {
+    const m = t.milestone || 'Other';
+    const sub = t.subMilestone || '';
+    if (!buckets.has(m)) { buckets.set(m, new Map()); subOrder.set(m, []); }
+    const subs = buckets.get(m);
+    if (!subs.has(sub)) {
+      subs.set(sub, []);
+      subOrder.get(m).push(sub);
+    }
+    subs.get(sub).push(t);
+  }
+
+  // Use the plan-supplied milestone order when we have it, fall back to
+  // bucket-insertion order. The "Other" bucket goes last so hand-added tasks
+  // sit visually below the imported plan.
+  const milestoneOrder = [];
+  const seen = new Set();
+  if (Array.isArray(planMilestones)) {
+    for (const m of planMilestones) {
+      if (buckets.has(m.title) && !seen.has(m.title)) {
+        milestoneOrder.push(m.title);
+        seen.add(m.title);
+      }
+    }
+  }
+  for (const k of buckets.keys()) {
+    if (!seen.has(k) && k !== 'Other') {
+      milestoneOrder.push(k);
+      seen.add(k);
+    }
+  }
+  if (buckets.has('Other')) milestoneOrder.push('Other');
+
+  const planNoteByTitle = new Map(
+    Array.isArray(planMilestones)
+      ? planMilestones.map(m => [m.title, m])
+      : []
+  );
+
+  const blocks = milestoneOrder.map(mTitle => {
+    const subs = buckets.get(mTitle);
+    const planMeta = planNoteByTitle.get(mTitle);
+    let mDone = 0, mTotal = 0;
+    for (const arr of subs.values()) {
+      mTotal += arr.length;
+      mDone += arr.filter(t => t.done).length;
+    }
+    const allDone = mTotal > 0 && mDone === mTotal;
+    const status = planMeta && planMeta.status === 'complete' ? 'complete' : null;
+    const summaryClass = allDone || status === 'complete'
+      ? 'milestone-summary milestone-done'
+      : 'milestone-summary';
+    const subBlocks = subOrder.get(mTitle).map(subTitle => {
+      const list = subs.get(subTitle);
+      const sDone = list.filter(t => t.done).length;
+      const header = subTitle
+        ? `<h4 class="sub-title">${escapeHtml(subTitle)}
+             <span class="sub-count">${sDone}/${list.length}</span></h4>`
+        : '';
+      return `${header}<ul class="tasks">${list.map(renderTaskItem).join('')}</ul>`;
+    }).join('');
+    const note = planMeta && planMeta.note
+      ? `<p class="milestone-note"><em>${escapeHtml(planMeta.note)}</em></p>`
+      : '';
+    // Open by default unless the milestone is fully complete — collapsed-when-
+    // done keeps the active phase visible at a glance on long plans.
+    const openAttr = allDone ? '' : ' open';
+    return `
+      <details class="milestone"${openAttr}>
+        <summary class="${summaryClass}">
+          <span class="milestone-title">${escapeHtml(mTitle)}</span>
+          <span class="milestone-count">${mDone}/${mTotal}</span>
+        </summary>
+        ${note}
+        ${subBlocks}
+      </details>
+    `;
+  }).join('');
+
+  return blocks;
+}
+
 function shipSection(state) {
   const s = state.ship;
-  const tasks = s.tasks.length
-    ? `<ul class="tasks">${s.tasks.map(t => {
-        const agentBadge = t.agent
-          ? `<span class="task-agent">${escapeHtml(t.agent)}</span>`
-          : '';
-        return `
-        <li class="${t.done ? 'task-done' : 'task-todo'}">
-          <span class="task-mark">${t.done ? '✓' : '·'}</span>
-          ${agentBadge}
-          <span class="task-text">${escapeHtml(t.text)}</span>
-        </li>
-      `;
-      }).join('')}</ul>`
-    : '<p class="empty">No tasks yet.</p>';
+  const hasMilestones = s.tasks.some(t => t.milestone);
+  let tasks;
+  if (!s.tasks.length) {
+    tasks = '<p class="empty">No tasks yet.</p>';
+  } else if (hasMilestones) {
+    const planMs = state.plan && state.plan.milestones ? state.plan.milestones : [];
+    tasks = renderGroupedTasks(s.tasks, planMs);
+  } else {
+    tasks = `<ul class="tasks">${s.tasks.map(renderTaskItem).join('')}</ul>`;
+  }
   const treeSvg = renderTree(state);
   const treeBlock = treeSvg ? `<div class="ship-tree">${treeSvg}</div>` : '';
   const diff = s.diffUrl
@@ -162,6 +262,67 @@ function shipSection(state) {
       ${tasks}
       ${diff}
       ${shipped}
+    </section>`;
+}
+
+// Top-of-page status block when the session was imported from a plan/ folder.
+// Shows a progress bar, source-file paths, and a per-milestone breakdown.
+// This is "the visual checklist + status update" the import-plan command
+// is built around — rest of the page is the same scope/sift/ship layout.
+function planSummarySection(state) {
+  if (!state.plan) return '';
+  const tasks = state.ship.tasks.filter(t => t.milestone);
+  const total = tasks.length;
+  const done = tasks.filter(t => t.done).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const sources = [];
+  if (state.plan.prdPath) {
+    sources.push(`<a href="${escapeHtml('../../../' + state.plan.prdPath)}">${escapeHtml(state.plan.prdPath)}</a>`);
+  }
+  if (state.plan.buildPlanPath) {
+    sources.push(`<a href="${escapeHtml('../../../' + state.plan.buildPlanPath)}">${escapeHtml(state.plan.buildPlanPath)}</a>`);
+  }
+  const sourceLine = sources.length
+    ? `<div class="plan-sources">imported from ${sources.join(' · ')}</div>`
+    : '';
+  // Per-milestone counts in the plan order. Skip H2 sections that contain no
+  // checkboxes (e.g. "Context" or "Estimates" reference tables) so the
+  // summary stays focused on actionable progress.
+  const milestoneRows = state.plan.milestones && state.plan.milestones.length
+    ? state.plan.milestones
+        .map(m => ({ m, ms: tasks.filter(t => t.milestone === m.title) }))
+        .filter(({ ms }) => ms.length > 0)
+        .map(({ m, ms }) => {
+          const md = ms.filter(t => t.done).length;
+          const mt = ms.length;
+          const pctM = mt ? Math.round((md / mt) * 100) : 0;
+          const stateCls = mt > 0 && md === mt ? 'plan-row plan-row-done' : 'plan-row';
+          return `
+            <li class="${stateCls}">
+              <span class="plan-row-title">${escapeHtml(m.title)}</span>
+              <span class="plan-row-bar"><span class="plan-row-fill" style="width:${pctM}%"></span></span>
+              <span class="plan-row-count">${md}/${mt}</span>
+            </li>`;
+        }).join('')
+    : '';
+  const goalsBlock = state.plan.goals && state.plan.goals.length
+    ? `<details class="plan-goals"><summary>${state.plan.goals.length} goals · ${state.plan.nonGoals.length} non-goals</summary>
+         <h4>Goals</h4>
+         <ul>${state.plan.goals.map(g => `<li>${escapeHtml(g)}</li>`).join('')}</ul>
+         ${state.plan.nonGoals.length ? `<h4>Non-goals</h4><ul>${state.plan.nonGoals.map(g => `<li>${escapeHtml(g)}</li>`).join('')}</ul>` : ''}
+       </details>`
+    : '';
+  return `
+    <section class="plan-summary">
+      <div class="plan-header">
+        <span class="plan-label">Plan</span>
+        <span class="plan-percent">${pct}% complete</span>
+        <span class="plan-totals">${done} / ${total} tasks</span>
+      </div>
+      <div class="plan-progress"><div class="plan-progress-fill" style="width:${pct}%"></div></div>
+      ${sourceLine}
+      ${milestoneRows ? `<ul class="plan-rows">${milestoneRows}</ul>` : ''}
+      ${goalsBlock}
     </section>`;
 }
 
@@ -460,7 +621,132 @@ const STYLES = `
     .pipeline svg text { font-size: 10px; }
   }
 
-  /* Header toolbar — theme toggle + copy-as-prompt button live here, top-
+  /* Plan summary, the top-of-page block when import-plan was used. */
+  .plan-summary {
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.125rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  .plan-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.625rem;
+  }
+  .plan-label {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-faint);
+    font-weight: 700;
+  }
+  .plan-percent { font-size: 1.25rem; font-weight: 700; color: var(--text); }
+  .plan-totals { font-size: 0.875rem; color: var(--text-dim); }
+  .plan-progress {
+    height: 6px;
+    background: var(--surface-2);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+  }
+  .plan-progress-fill {
+    height: 100%;
+    background: var(--positive);
+    transition: width 200ms ease;
+  }
+  .plan-sources {
+    font-size: 0.75rem;
+    color: var(--text-faint);
+    margin-bottom: 0.75rem;
+  }
+  .plan-sources a { color: var(--text-dim); }
+  .plan-rows {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0;
+  }
+  .plan-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 56px;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.3125rem 0;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+  }
+  .plan-row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .plan-row-bar { height: 4px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
+  .plan-row-fill { display: block; height: 100%; background: var(--accent); }
+  .plan-row-done .plan-row-fill { background: var(--positive); }
+  .plan-row-count {
+    text-align: right;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+  .plan-row-done .plan-row-count { color: var(--positive); }
+  .plan-goals { margin-top: 0.875rem; font-size: 0.875rem; }
+  .plan-goals summary {
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 0.8125rem;
+    padding: 0.25rem 0;
+  }
+  .plan-goals h4 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); margin: 0.75rem 0 0.25rem; }
+  .plan-goals ul { padding-left: 1.25rem; margin: 0.25rem 0 0.5rem; }
+  .plan-goals li { font-size: 0.8125rem; color: var(--text-muted); margin: 0.125rem 0; }
+
+  /* Milestone groups in the ship section, when tasks were imported. */
+  details.milestone { margin: 0.75rem 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  details.milestone > summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 0.625rem 0.875rem;
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+  }
+  details.milestone > summary::-webkit-details-marker { display: none; }
+  details.milestone > summary::before {
+    content: "›";
+    color: var(--text-faint);
+    font-family: ui-monospace, monospace;
+    font-weight: 600;
+    transition: transform 150ms ease;
+    display: inline-block;
+  }
+  details.milestone[open] > summary::before { transform: rotate(90deg); color: var(--accent); }
+  .milestone-title { flex: 1; font-weight: 600; color: var(--text); font-size: 0.9375rem; }
+  .milestone-count {
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    border-radius: 3px;
+    padding: 0.0625rem 0.375rem;
+  }
+  .milestone-done .milestone-count { color: var(--positive); }
+  .milestone-note { padding: 0 0.875rem; margin: 0.5rem 0 0; font-size: 0.8125rem; color: var(--text-dim); }
+  details.milestone > h4.sub-title,
+  details.milestone .sub-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    padding: 0 0.875rem;
+    margin: 0.625rem 0 0.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .sub-count { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.6875rem; color: var(--text-faint); }
+  details.milestone .tasks { padding: 0 0.875rem 0.5rem 1.875rem; }
+
+  /* Header toolbar. Theme toggle and copy-as-prompt button live here, top-
      right, stacked or side-by-side depending on width. The .toolbar wraps
      both so they share placement and so the layout doesn't depend on each
      button's individual absolute position. */
@@ -638,6 +924,7 @@ export function renderHTML(state) {
 <div class="pipeline" aria-label="Session lifecycle pipeline">${renderPipeline(state)}</div>
 <nav>${nav(state)}</nav>
 <main>
+${planSummarySection(state)}
 ${scopeSection(state)}
 ${siftSection(state)}
 ${shipSection(state)}

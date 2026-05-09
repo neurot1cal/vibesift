@@ -140,10 +140,10 @@ export function setDiffUrl(state, url) {
 // time is preserved as the canonical "live" moment.
 //
 // opts.at (number, ms since epoch) overrides Date.now() for retroactive
-// backfill — set this when the actual deployment happened in the past and
+// backfill. Set this when the actual deployment happened in the past and
 // you're running `vibesift deploy --at <iso-date>` to record it accurately.
 // updatedAt always reflects the moment the mark happened (when the CLI ran),
-// not the override timestamp; updatedAt is the audit trail of activity, not
+// not the override timestamp. updatedAt is the audit trail of activity, not
 // of when the lifecycle event occurred.
 export function markDeployed(state, opts = {}) {
   if (state.deployedAt) return state;
@@ -158,4 +158,81 @@ export function markDeployed(state, opts = {}) {
   state.deployedAt = at;
   state.updatedAt = Date.now();
   return state;
+}
+
+// Apply a parsed plan (PRD + build-plan) onto the state in an idempotent way.
+// Re-running this should converge: tasks already present (matched by
+// milestone+sub+text) get their `done` flag refreshed; tasks not seen before
+// are appended with new ids; tasks the user added by hand stay untouched.
+//
+// The function never overwrites existing CLI-authored content:
+//   - state.scope.problem is only set if currently empty (so an explicit
+//     `decide --phase scope` is preserved across imports)
+//   - decisions, options, rationale are not touched
+//   - existing task `agent` fields are not stripped
+//
+// `parsed` shape (loose — see parsePlan.js):
+//   { prd: { problem, goals, nonGoals }, buildPlan: { tasks, milestones },
+//     prdPath, buildPlanPath }
+export function applyImportedPlan(state, parsed) {
+  const now = Date.now();
+  const prd = parsed.prd || {};
+  const bp = parsed.buildPlan || { tasks: [], milestones: [] };
+
+  state.plan = {
+    prdPath: parsed.prdPath || null,
+    buildPlanPath: parsed.buildPlanPath || null,
+    problem: prd.problem || '',
+    goals: Array.isArray(prd.goals) ? prd.goals.slice() : [],
+    nonGoals: Array.isArray(prd.nonGoals) ? prd.nonGoals.slice() : [],
+    milestones: (bp.milestones || []).map(m => ({
+      title: m.title,
+      status: m.status || null,
+      note: m.note || null,
+    })),
+    importedAt: now,
+  };
+
+  if (!state.scope.problem && prd.problem) {
+    state.scope.problem = prd.problem;
+  }
+
+  // Index existing imported tasks by composite key so re-import is O(n).
+  // Only tasks that carry a milestone (i.e. were imported, not hand-added via
+  // `vibesift ship task add`) are eligible for the upsert; hand-added tasks
+  // stay flat in the list with no milestone tag.
+  const keyFor = t => `${t.milestone || ''}\x1f${t.subMilestone || ''}\x1f${t.text}`;
+  const existing = new Map();
+  for (const t of state.ship.tasks) {
+    if (t.milestone) existing.set(keyFor(t), t);
+  }
+
+  let added = 0;
+  let updated = 0;
+  for (const incoming of bp.tasks) {
+    const key = keyFor(incoming);
+    const hit = existing.get(key);
+    if (hit) {
+      if (hit.done !== incoming.done) {
+        hit.done = incoming.done;
+        updated++;
+      }
+      // Surface in-progress without a separate field by leaving done=false;
+      // a `progress` flag would round-trip but isn't needed for v1.
+    } else {
+      const task = {
+        id: state.ship.tasks.length + 1,
+        text: incoming.text,
+        done: !!incoming.done,
+        milestone: incoming.milestone || null,
+      };
+      if (incoming.subMilestone) task.subMilestone = incoming.subMilestone;
+      state.ship.tasks.push(task);
+      existing.set(key, task);
+      added++;
+    }
+  }
+
+  state.updatedAt = now;
+  return { added, updated, total: bp.tasks.length };
 }
