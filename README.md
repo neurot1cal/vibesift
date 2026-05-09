@@ -9,14 +9,12 @@
 Scope.  Sift.  Ship.
 </pre>
 
-> ![full lifecycle demo](assets/asciinema/casts/full.gif)
-
 > **Scope. Sift. Ship.** Static HTML status pages for terminal-driven agentic flows.
 
 [![CI](https://github.com/neurot1cal/vibesift/actions/workflows/ci.yml/badge.svg)](https://github.com/neurot1cal/vibesift/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/vibesift.svg)](https://www.npmjs.com/package/vibesift)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
-[![Node](https://img.shields.io/node/v/vibesift)](package.json)
+[![Node](https://img.shields.io/badge/node-%E2%89%A520-43853d.svg)](package.json)
+[![Status](https://img.shields.io/badge/status-pre--release-orange.svg)](https://github.com/neurot1cal/vibesift/releases)
 
 vibesift turns each session of design + planning + implementation work into a
 single self-contained HTML file in your repo, served by GitHub Pages, viewable
