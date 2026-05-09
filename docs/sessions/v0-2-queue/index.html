@@ -188,6 +188,20 @@
   .task-todo .task-mark { color: var(--text-faint); }
   .task-done .task-mark { color: var(--positive); }
   .task-done .task-text { color: var(--text-faint); text-decoration: line-through; }
+  .task-agent {
+    display: inline-block;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", monospace;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.0625rem 0.375rem;
+    margin-right: 0.375rem;
+    vertical-align: 1px;
+  }
   .diff-link {
     display: inline-block;
     margin-top: 0.5rem;
@@ -241,7 +255,7 @@
     <span class="badge badge-active">Shipping</span>
     <span><a href="https://github.com/neurot1cal/vibesift">github.com/neurot1cal/vibesift</a></span>
     <span>branch: <code>feat/v0-2-coordinator</code></span>
-    <span class="meta">updated 2026-05-09 19:37 UTC</span>
+    <span class="meta">updated 2026-05-09 19:55 UTC</span>
   </div>
 </header>
 <nav><a href="#scope" class="nav-item nav-done">Scope</a><a href="#sift" class="nav-item nav-done">Sift</a><a href="#ship" class="nav-item nav-active">Ship</a></nav>
@@ -276,48 +290,57 @@
       <h2>Ship</h2>
       <h3>Tasks</h3>
       <ul class="tasks">
-        <li class="task-todo">
-          <span class="task-mark">·</span>
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          
           <span class="task-text">Create 3 worktrees: feat/v0-2-no-commit, feat/v0-2-index-command, feat/v0-2-agent-attribution</span>
         </li>
       
         <li class="task-todo">
           <span class="task-mark">·</span>
+          
           <span class="task-text">Dispatch Agent A: implement --no-commit / preview-before-commit flag across CLI mutations</span>
         </li>
       
         <li class="task-todo">
           <span class="task-mark">·</span>
+          
           <span class="task-text">Dispatch Agent B: implement vibesift index command that auto-regenerates docs/index.html sessions list from docs/sessions/</span>
         </li>
       
         <li class="task-todo">
           <span class="task-mark">·</span>
+          
           <span class="task-text">Dispatch Agent C: implement ship-phase agent attribution (--agent flag on task add, agent badge in template, summary in status)</span>
         </li>
       
         <li class="task-todo">
           <span class="task-mark">·</span>
+          
           <span class="task-text">Merge each PR as it lands; resolve src/cli.js conflicts at merge-time</span>
         </li>
       
         <li class="task-todo">
           <span class="task-mark">·</span>
+          
           <span class="task-text">Re-render existing sessions with any template changes (vibesift render)</span>
         </li>
       
         <li class="task-todo">
           <span class="task-mark">·</span>
+          
           <span class="task-text">Tag v0.2.0 + npm publish (release.yml fires on tag push)</span>
         </li>
       
         <li class="task-done">
           <span class="task-mark">✓</span>
+          
           <span class="task-text">Hot-fix vibesift-com-landing diffUrl regression via PR #11 (out-of-band; not part of v0.2 release tag)</span>
         </li>
       
         <li class="task-todo">
           <span class="task-mark">·</span>
+          
           <span class="task-text">Dispatch Agent D: proper fix for diffUrl regression — capture merge commit SHA on decide --phase ship; add &#39;vibesift ship &lt;slug&gt; diff &lt;url&gt;&#39; for manual override</span>
         </li>
       </ul>
@@ -354,7 +377,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "ship",
   "createdAt": 1778354934973,
-  "updatedAt": 1778355422848,
+  "updatedAt": 1778356507083,
   "scope": {
     "problem": "Today vibesift CLI is purely serial. Every mutation auto-commits with no preview-before-commit option (gap surfaced in the v0.1 session). The landing sessions list is hand-maintained and goes stale. Ship-phase tasks have no way to attribute work to a specific agent or capture parallel-team execution. Block-level commenting is also queued but is significantly more work (needs a worker + auth) and is deferred to v0.3.",
     "constraints": [
@@ -391,7 +414,7 @@
       {
         "id": 1,
         "text": "Create 3 worktrees: feat/v0-2-no-commit, feat/v0-2-index-command, feat/v0-2-agent-attribution",
-        "done": false
+        "done": true
       },
       {
         "id": 2,
