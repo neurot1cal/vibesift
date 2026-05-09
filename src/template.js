@@ -4,7 +4,7 @@
 
 import { PHASES } from './state.js';
 
-const escapeHtml = s =>
+export const escapeHtml = s =>
   String(s).replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[c]));
