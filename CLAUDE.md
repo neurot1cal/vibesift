@@ -1,5 +1,11 @@
 # vibesift — agent instructions
 
+## Status
+
+**v0.1, research preview.** First public cut. The pitch is locked but the
+CLI surface, defaults, and rendered output are still moving. The repo is
+open for feedback and external contributors via GitHub issues + PRs.
+
 ## Pitch (memorize this)
 
 Brainstorm.md, spec.md, plan.md, implementation.md. Your agent's flow generates

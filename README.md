@@ -14,7 +14,11 @@ Scope.  Sift.  Ship.
 [![CI](https://github.com/neurot1cal/vibesift/actions/workflows/ci.yml/badge.svg)](https://github.com/neurot1cal/vibesift/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-43853d.svg)](package.json)
-[![Status](https://img.shields.io/badge/status-pre--release-orange.svg)](https://github.com/neurot1cal/vibesift/releases)
+[![Status](https://img.shields.io/badge/status-research--preview-orange.svg)](https://github.com/neurot1cal/vibesift/issues)
+
+> **Research preview.** v0.1 is the first public cut. Shape, defaults, and
+> CLI surface are still moving. Open for feedback and contributors —
+> [open an issue](https://github.com/neurot1cal/vibesift/issues/new) or send a PR.
 
 `brainstorm.md`, `spec.md`, `plan.md`, `implementation.md`. Your AI sessions
 generate dense, structured thinking and ship it as walls of markdown nobody
