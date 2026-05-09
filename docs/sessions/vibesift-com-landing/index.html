@@ -215,7 +215,7 @@
     <section id="sift" class="phase">
       <h2>Sift</h2>
       <h3>Options considered</h3>
-      <p class="empty">No options yet.</p>
+      <ul class="options"><li>Hand-written static HTML at docs/index.html with a hardcoded sessions list. Fast to ship, zero runtime cost, matches the project&#39;s no-build philosophy. Cost: every new session requires a one-line edit to the index. Acceptable while session count is small.</li></ul>
       <p class="pending">No selection yet.</p>
     </section>
 
@@ -250,7 +250,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "sift",
   "createdAt": 1778353301743,
-  "updatedAt": 1778353354186,
+  "updatedAt": 1778353354317,
   "scope": {
     "problem": "docs/index.html is the bootstrap placeholder. First-time visitors at vibesift.com see 'No sessions yet' and zero context about the project — no description, no Scope→Sift→Ship explainer, no link to the GitHub repo, no list of actual sessions. The placeholder shipped because v0.1 used the bootstrap template as a stub; the landing page is now its own feature.",
     "constraints": [
@@ -265,7 +265,12 @@
     "decidedAt": 1778353330023
   },
   "sift": {
-    "options": [],
+    "options": [
+      {
+        "text": "Hand-written static HTML at docs/index.html with a hardcoded sessions list. Fast to ship, zero runtime cost, matches the project's no-build philosophy. Cost: every new session requires a one-line edit to the index. Acceptable while session count is small.",
+        "addedAt": 1778353354317
+      }
+    ],
     "decision": null,
     "rationale": "",
     "decidedAt": null
