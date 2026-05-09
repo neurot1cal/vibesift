@@ -88,3 +88,27 @@ test('parseState round-trips through renderHTML', () => {
 test('PHASES is the expected ordered list', () => {
   assert.deepEqual(PHASES, ['scope', 'sift', 'ship']);
 });
+
+test('addTask accepts optional {agent} and persists it', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  const id = addTask(s, 'wire the badge', { agent: 'alice' });
+  assert.equal(id, 1);
+  assert.equal(s.ship.tasks[0].agent, 'alice');
+  // Tasks added without agent should NOT carry the field at all,
+  // so existing serialized sessions stay byte-identical.
+  const id2 = addTask(s, 'no agent task');
+  assert.equal(id2, 2);
+  assert.equal(Object.prototype.hasOwnProperty.call(s.ship.tasks[1], 'agent'), false);
+});
+
+test('task with .agent round-trips through parseState(renderHTML(...))', () => {
+  const original = emptyState({ slug: 'rt-agent', title: 'RT Agent' });
+  advancePhase(original); advancePhase(original);
+  addTask(original, 'task with agent', { agent: 'bob' });
+  addTask(original, 'task without agent');
+  const html = renderHTML(original);
+  const recovered = parseState(html);
+  assert.equal(recovered.ship.tasks[0].agent, 'bob');
+  assert.equal(Object.prototype.hasOwnProperty.call(recovered.ship.tasks[1], 'agent'), false);
+  assert.deepEqual(recovered, original);
+});

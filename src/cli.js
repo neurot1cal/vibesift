@@ -22,7 +22,7 @@ Commands
   vibesift scope <slug> add-constraint "..."
   vibesift sift  <slug> add-option "..."
   vibesift sift  <slug> rationale "..."
-  vibesift ship  <slug> task add "..."
+  vibesift ship  <slug> task add "..." [--agent <name>]
   vibesift ship  <slug> task done <id>
   vibesift decide <slug> --phase <scope|sift|ship> --text "..."
   vibesift advance <slug>
@@ -163,11 +163,28 @@ function cmdShip(argv) {
   const action = argv[2];
   const { state, path } = loadState(slug);
   if (action === 'add') {
-    const text = argv.slice(3).join(' ').trim();
+    // Pull --agent <name> out of the positional task-text args before joining.
+    // The flag can appear anywhere after `add`; everything else is the task text.
+    const rest = argv.slice(3);
+    let agent = null;
+    const textParts = [];
+    for (let i = 0; i < rest.length; i++) {
+      if (rest[i] === '--agent' && i + 1 < rest.length) {
+        agent = rest[i + 1];
+        i++;
+      } else {
+        textParts.push(rest[i]);
+      }
+    }
+    const text = textParts.join(' ').trim();
     if (!text) die('task text required');
-    const id = addTask(state, text);
-    const r = saveAndCommit(state, path, `vibesift: ship task #${id} added on ${slug}`);
-    reportCommit(r, `task #${id}: ${text}`);
+    const trimmedAgent = typeof agent === 'string' ? agent.trim() : '';
+    const id = addTask(state, text, trimmedAgent ? { agent: trimmedAgent } : undefined);
+    const message = trimmedAgent
+      ? `vibesift: ship task #${id} added to ${trimmedAgent} on ${slug}`
+      : `vibesift: ship task #${id} added on ${slug}`;
+    const r = saveAndCommit(state, path, message);
+    reportCommit(r, trimmedAgent ? `task #${id} [${trimmedAgent}]: ${text}` : `task #${id}: ${text}`);
   } else if (action === 'done') {
     const id = argv[3];
     if (!id) die('task id required');
@@ -237,6 +254,25 @@ function cmdStatus(argv) {
   const tasks = state.ship.tasks;
   const done = tasks.filter(t => t.done).length;
   process.stdout.write(`ship:    ${done}/${tasks.length} tasks${state.ship.shippedAt ? ' · shipped' : ''}\n`);
+  // Only emit `agents:` when at least one task carries an agent attribution.
+  // Group: per-agent done/total, alphabetically by name; "unassigned" last.
+  if (tasks.some(t => t.agent)) {
+    const groups = new Map();
+    for (const t of tasks) {
+      const key = t.agent || 'unassigned';
+      const g = groups.get(key) || { done: 0, total: 0 };
+      g.total += 1;
+      if (t.done) g.done += 1;
+      groups.set(key, g);
+    }
+    const named = [...groups.keys()].filter(k => k !== 'unassigned').sort();
+    if (groups.has('unassigned')) named.push('unassigned');
+    const parts = named.map(k => {
+      const g = groups.get(k);
+      return `${k}(${g.done}/${g.total})`;
+    });
+    process.stdout.write(`agents:  ${parts.join(' ')}\n`);
+  }
   process.stdout.write(`updated: ${new Date(state.updatedAt).toISOString()}\n`);
 }
 
