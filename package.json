@@ -1,0 +1,39 @@
+{
+  "name": "vibesift",
+  "version": "0.1.0",
+  "description": "Static HTML status broadcaster for terminal-driven agentic flows. Scope, Sift, Ship.",
+  "type": "module",
+  "bin": {
+    "vibesift": "./src/cli.js"
+  },
+  "exports": {
+    ".": "./src/index.js",
+    "./template": "./src/template.js",
+    "./state": "./src/state.js"
+  },
+  "files": [
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test 'tests/*.test.js'",
+    "smoke": "node tests/smoke.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "agent",
+    "claude-code",
+    "spec-driven",
+    "html",
+    "session",
+    "status"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vibesift/vibesift.git"
+  }
+}
