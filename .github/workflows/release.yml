@@ -4,22 +4,86 @@ on:
   push:
     tags: ['v*.*.*']
 
+# Minimal default permissions; jobs expand only what they need.
+permissions:
+  contents: read
+
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # Required for SLSA L3 provenance via `npm publish --provenance`.
       id-token: write
     steps:
       # actions/checkout@v6.0.0
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          # Tag-version-match guard reads the tag; need its full ref.
+          fetch-depth: 0
+
       # actions/setup-node@v6.4.0
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
-      - run: npm test
-      - run: npm publish --provenance --access public
+
+      # Supply-chain guard #1: refuse to publish if the git tag and the
+      # package.json version don't agree. Catches accidental tag pushes
+      # ahead of (or behind) a version bump, which would otherwise ship
+      # a mis-versioned tarball that's then immutable on the registry.
+      # GITHUB_REF is system-controlled (not user input) so direct shell
+      # parameter expansion is safe here.
+      - name: Verify tag matches package version
+        run: |
+          tag="${GITHUB_REF#refs/tags/v}"
+          pkg=$(node -p "require('./package.json').version")
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::tag v$tag does not match package.json version $pkg"
+            exit 1
+          fi
+          echo "tag and package.json agree on $pkg"
+
+      - name: Run tests
+        run: npm test
+
+      # Supply-chain guard #2: list every file that would be published.
+      # The pack-audit.yml workflow already enforces a whitelist on PRs;
+      # this is the last-line backstop, captured in the publish run log
+      # for incident-response forensics.
+      - name: Pack contents preview
+        run: |
+          npm pack --dry-run
+          echo "---file list---"
+          npm pack --dry-run --json | node -e "
+            const data = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+            const files = data[0].files.map(f => f.path).sort();
+            files.forEach(f => console.log('  ' + f));
+            console.log('total: ' + files.length);
+          "
+
+      # Supply-chain guard #3: dependency signature verification. Today
+      # vibesift has zero runtime deps so this is a no-op, but it future-
+      # proofs against silently adding an unsigned dependency in a later
+      # release.
+      - name: Audit dependency signatures
+        run: |
+          if [ -f package-lock.json ]; then
+            npm audit signatures
+          else
+            echo "no package-lock.json — vibesift has zero runtime deps; nothing to audit"
+          fi
+
+      # Final dry-run before the real publish, so the workflow log shows
+      # exactly what would have been pushed if the next step has a typo
+      # or a registry hiccup. No side effects.
+      - name: Publish dry-run
+        run: npm publish --provenance --access public --dry-run
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
