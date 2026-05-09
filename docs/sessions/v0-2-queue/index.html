@@ -241,7 +241,7 @@
     <span class="badge badge-active">Scoping</span>
     <span><a href="https://github.com/neurot1cal/vibesift">github.com/neurot1cal/vibesift</a></span>
     <span>branch: <code>feat/v0-2-coordinator</code></span>
-    <span class="meta">updated 2026-05-09 19:28 UTC</span>
+    <span class="meta">updated 2026-05-09 19:29 UTC</span>
   </div>
 </header>
 <nav><a href="#scope" class="nav-item nav-active">Scope</a><a href="#sift" class="nav-item">Sift</a><a href="#ship" class="nav-item">Ship</a></nav>
@@ -252,7 +252,7 @@
       <h3>Problem</h3>
       <div class="problem"><details class="record"><summary>Today vibesift CLI is purely serial.</summary><div class="record-body">Today vibesift CLI is purely serial. Every mutation auto-commits with no preview-before-commit option (gap surfaced in the v0.1 session). The landing sessions list is hand-maintained and goes stale. Ship-phase tasks have no way to attribute work to a specific agent or capture parallel-team execution. Block-level commenting is also queued but is significantly more work (needs a worker + auth) and is deferred to v0.3.</div></details></div>
       <h3>Constraints</h3>
-      <p class="empty">No constraints recorded.</p>
+      <ul class="constraints"><li><details class="record"><summary>Each feature ships as its own independently-mergeable PR.</summary><div class="record-body">Each feature ships as its own independently-mergeable PR. No bundled mega-PR; one PR per work-stream so we can demo the parallel-shipping pattern.</div></details></li></ul>
       <p class="pending">Pending decision.</p>
     </section>
 
@@ -282,10 +282,12 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "scope",
   "createdAt": 1778354934973,
-  "updatedAt": 1778354934973,
+  "updatedAt": 1778354960363,
   "scope": {
     "problem": "Today vibesift CLI is purely serial. Every mutation auto-commits with no preview-before-commit option (gap surfaced in the v0.1 session). The landing sessions list is hand-maintained and goes stale. Ship-phase tasks have no way to attribute work to a specific agent or capture parallel-team execution. Block-level commenting is also queued but is significantly more work (needs a worker + auth) and is deferred to v0.3.",
-    "constraints": [],
+    "constraints": [
+      "Each feature ships as its own independently-mergeable PR. No bundled mega-PR; one PR per work-stream so we can demo the parallel-shipping pattern."
+    ],
     "decision": null,
     "decidedAt": null
   },
