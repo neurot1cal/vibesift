@@ -1,0 +1,11 @@
+vibesift is dual-licensed under your choice of:
+
+- The MIT License — see LICENSE-MIT
+- The Apache License, Version 2.0 — see LICENSE-APACHE
+
+You may pick whichever of the two licenses you prefer for your use. Each
+contribution to vibesift is offered under both licenses unless the contributor
+explicitly notes otherwise.
+
+Pattern matches: ripgrep, bat, plannotator (post-relicense), and most modern
+Rust/TypeScript ecosystem tools.

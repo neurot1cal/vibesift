@@ -1,0 +1,37 @@
+name: Feature request
+description: Propose a new capability
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the user-visible situation, not the implementation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What command or behavior would solve it? Sketch the CLI signature if relevant.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope-fit
+    attributes:
+      label: Does this fit vibesift's scope?
+      description: vibesift is a status broadcaster. Comments, real-time editing, and interactive workspace features are explicitly out of scope.
+      options:
+        - "Yes, this is a status / lifecycle feature"
+        - "I'm not sure"
+        - "It might broaden scope but I think it's worth it"
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What else did you try or look at?

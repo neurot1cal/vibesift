@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: test (${{ matrix.os }} · node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: ['20', '22']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Show versions
+        run: |
+          node --version
+          git --version
+      - name: Run tests
+        run: npm test
+      - name: Smoke test (POSIX)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          tmp="$(mktemp -d)"
+          cd "$tmp"
+          git init -q
+          git config user.email ci@example.com
+          git config user.name CI
+          git checkout -b feature/smoke 2>/dev/null || true
+          node "$GITHUB_WORKSPACE/src/cli.js" bootstrap
+          node "$GITHUB_WORKSPACE/src/cli.js" init smoke --title "CI smoke"
+          node "$GITHUB_WORKSPACE/src/cli.js" scope smoke add-constraint "must work"
+          node "$GITHUB_WORKSPACE/src/cli.js" decide smoke --phase scope --text "yes"
+          node "$GITHUB_WORKSPACE/src/cli.js" advance smoke
+          node "$GITHUB_WORKSPACE/src/cli.js" sift smoke add-option "option A"
+          node "$GITHUB_WORKSPACE/src/cli.js" decide smoke --phase sift --text "option A"
+          node "$GITHUB_WORKSPACE/src/cli.js" advance smoke
+          node "$GITHUB_WORKSPACE/src/cli.js" ship smoke task add "first task"
+          node "$GITHUB_WORKSPACE/src/cli.js" ship smoke task done 1
+          node "$GITHUB_WORKSPACE/src/cli.js" status smoke
+          test -s docs/sessions/smoke/index.html
+      - name: Smoke test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $tmp = New-Item -ItemType Directory -Path "$env:TEMP\vibesift-smoke-$(Get-Random)"
+          Set-Location $tmp
+          git init -q
+          git config user.email ci@example.com
+          git config user.name CI
+          git checkout -b feature/smoke 2>$null
+          node "$env:GITHUB_WORKSPACE\src\cli.js" bootstrap
+          node "$env:GITHUB_WORKSPACE\src\cli.js" init smoke --title "CI smoke"
+          node "$env:GITHUB_WORKSPACE\src\cli.js" scope smoke add-constraint "must work"
+          node "$env:GITHUB_WORKSPACE\src\cli.js" decide smoke --phase scope --text "yes"
+          node "$env:GITHUB_WORKSPACE\src\cli.js" advance smoke
+          node "$env:GITHUB_WORKSPACE\src\cli.js" sift smoke add-option "option A"
+          node "$env:GITHUB_WORKSPACE\src\cli.js" decide smoke --phase sift --text "option A"
+          node "$env:GITHUB_WORKSPACE\src\cli.js" advance smoke
+          node "$env:GITHUB_WORKSPACE\src\cli.js" ship smoke task add "first task"
+          node "$env:GITHUB_WORKSPACE\src\cli.js" ship smoke task done 1
+          node "$env:GITHUB_WORKSPACE\src\cli.js" status smoke
+          if (-not (Test-Path "docs\sessions\smoke\index.html")) { exit 1 }
