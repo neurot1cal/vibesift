@@ -117,6 +117,54 @@
   .pending { color: var(--warning); font-size: 0.875rem; padding: 0.625rem 0.875rem; background: rgba(202,138,4,0.08); border-left: 3px solid var(--warning); border-radius: 0 4px 4px 0; }
   .problem { font-size: 1.0625rem; line-height: 1.6; }
   .constraints, .options, .tasks { padding-left: 1.25rem; }
+
+  /* Collapsible records — load-bearing for the .md-overload pitch.
+     Closed by default. Summary line shows first sentence; click to expand. */
+  details.record {
+    margin: 0.125rem 0;
+  }
+  details.record > summary {
+    cursor: pointer;
+    list-style: none;
+    color: var(--text-muted);
+    padding: 0.125rem 0 0.125rem 0.875rem;
+    position: relative;
+    border-radius: 3px;
+    transition: color 120ms;
+  }
+  details.record > summary::-webkit-details-marker { display: none; }
+  details.record > summary::before {
+    content: "›";
+    position: absolute;
+    left: 0;
+    top: 0.0625rem;
+    color: var(--text-faint);
+    font-family: ui-monospace, monospace;
+    font-weight: 600;
+    transition: transform 150ms ease, color 150ms ease;
+    transform-origin: 0.4em 0.5em;
+    display: inline-block;
+  }
+  details.record[open] > summary::before {
+    transform: rotate(90deg);
+    color: var(--accent);
+  }
+  details.record > summary:hover { color: var(--text); }
+  details.record > summary:hover::before { color: var(--accent); }
+  details.record > .record-body {
+    margin-top: 0.375rem;
+    padding: 0.625rem 0.875rem 0.625rem 1rem;
+    background: var(--surface-2);
+    border-left: 2px solid var(--accent-deep);
+    border-radius: 0 4px 4px 0;
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+  .record-text { color: var(--text-muted); }
+  .problem details.record > .record-body { font-size: 1rem; }
+
   .decision {
     margin-top: 1.5rem;
     padding: 0.875rem 1rem;
@@ -193,7 +241,7 @@
     <span class="badge badge-active">Shipping</span>
     <span><a href="https://github.com/neurot1cal/vibesift">github.com/neurot1cal/vibesift</a></span>
     <span>branch: <code>brand-and-dogfood</code></span>
-    <span class="meta">updated 2026-05-09 18:18 UTC</span>
+    <span class="meta">updated 2026-05-09 19:18 UTC</span>
   </div>
 </header>
 <nav><a href="#scope" class="nav-item nav-done">Scope</a><a href="#sift" class="nav-item nav-done">Sift</a><a href="#ship" class="nav-item nav-active">Ship</a></nav>
@@ -202,9 +250,9 @@
     <section id="scope" class="phase">
       <h2>Scope</h2>
       <h3>Problem</h3>
-      <p class="problem">Need a status page primitive for terminal-driven agentic flows that reads on a phone.</p>
+      <div class="problem"><details class="record"><summary>Need a status page primitive for terminal-driven agentic flows that reads on …</summary><div class="record-body">Need a status page primitive for terminal-driven agentic flows that reads on a phone.</div></details></div>
       <h3>Constraints</h3>
-      <ul class="constraints"><li>static HTML in docs/sessions/, served by GitHub Pages</li><li>zero runtime dependencies</li><li>cross-harness skill via single canonical SKILL.md</li><li>auto-commit each phase change</li></ul>
+      <ul class="constraints"><li><span class="record-text">static HTML in docs/sessions/, served by GitHub Pages</span></li><li><span class="record-text">zero runtime dependencies</span></li><li><span class="record-text">cross-harness skill via single canonical SKILL.md</span></li><li><span class="record-text">auto-commit each phase change</span></li></ul>
       <div class="decision">
          <span class="decision-label">Decision</span>
          <p>JSON-in-script-tag state, inline CSS, dual MIT/Apache-2.0</p>
@@ -215,11 +263,11 @@
     <section id="sift" class="phase">
       <h2>Sift</h2>
       <h3>Options considered</h3>
-      <ul class="options"><li>Markdown spec + SSG</li><li>Notion-style hosted SaaS</li><li>Static HTML written directly by the CLI</li></ul>
+      <ul class="options"><li><span class="record-text">Markdown spec + SSG</span></li><li><span class="record-text">Notion-style hosted SaaS</span></li><li><span class="record-text">Static HTML written directly by the CLI</span></li></ul>
       <div class="decision">
          <span class="decision-label">Chose</span>
          <p>Static HTML written directly by the CLI</p>
-         <p class="rationale">Static HTML matches the read-only-status-broadcast thesis without standing up infra; SSG adds a build step we don&#39;t need</p>
+         <div class="rationale"><details class="record"><summary>Static HTML matches the read-only-status-broadcast thesis without standing up…</summary><div class="record-body">Static HTML matches the read-only-status-broadcast thesis without standing up infra; SSG adds a build step we don&#39;t need</div></details></div>
          <span class="decision-time">2026-05-09 18:18 UTC</span>
        </div>
     </section>
@@ -296,7 +344,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "ship",
   "createdAt": 1778350672560,
-  "updatedAt": 1778350714846,
+  "updatedAt": 1778354334666,
   "scope": {
     "problem": "Need a status page primitive for terminal-driven agentic flows that reads on a phone.",
     "constraints": [

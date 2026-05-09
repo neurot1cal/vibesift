@@ -9,16 +9,22 @@
 Scope.  Sift.  Ship.
 </pre>
 
-> **Scope. Sift. Ship.** Static HTML status pages for terminal-driven agentic flows.
+> **Scope. Sift. Ship.** One CLI. One HTML page per agent session. Read-only. Auto-committed.
 
 [![CI](https://github.com/neurot1cal/vibesift/actions/workflows/ci.yml/badge.svg)](https://github.com/neurot1cal/vibesift/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-43853d.svg)](package.json)
-[![Status](https://img.shields.io/badge/status-pre--release-orange.svg)](https://github.com/neurot1cal/vibesift/releases)
+[![Status](https://img.shields.io/badge/status-research--preview-orange.svg)](https://github.com/neurot1cal/vibesift/issues)
 
-vibesift turns each session of design + planning + implementation work into a
-single self-contained HTML file in your repo, served by GitHub Pages, viewable
-from any phone. The terminal drives. The page is read-only.
+> **Research preview.** v0.1 is the first public cut. Shape, defaults, and
+> CLI surface are still moving. Open for feedback and contributors —
+> [open an issue](https://github.com/neurot1cal/vibesift/issues/new) or send a PR.
+
+`brainstorm.md`, `spec.md`, `plan.md`, `implementation.md`. Your AI sessions
+generate dense, structured thinking and ship it as walls of markdown nobody
+on your team opens. vibesift takes the same content and renders it as one
+HTML page per session: every constraint, option, and decision is a
+collapsible record. The page reads at a glance, every detail one click away.
 
 ```bash
 npx vibesift bootstrap                                    # one-time per repo
@@ -32,20 +38,25 @@ npx vibesift advance my-feature
 
 ## Why
 
-Markdown is an interchange format we tolerated. HTML is what humans actually
-want to read — clickable, filterable, styled, navigable, mobile-friendly. A
-status page rendered as HTML loads in any browser, on any device, with no
-build step. Writing the artifact directly as HTML, instead of generating it
-from intermediate markdown, removes a whole layer.
+The brainstorm/spec/design/implementation flow from agentic toolchains
+(Anthropic superpowers, GitHub Spec Kit, Kiro, TaskMaster, BMAD) produces
+gold content and ships it as `.md` files nobody reads. The information is
+there, structured, well-reasoned. It just lives behind a wall of prose
+that mobile reviewers swipe past.
 
-vibesift is the smallest possible thing that does this:
+vibesift is the smallest possible thing that fixes that:
 
-- Pure Node CLI, zero runtime dependencies
-- Inline CSS, no CDN, no JS framework
-- State persisted as JSON inside the HTML itself (single source of truth)
-- Auto-commits every change to the current branch
-- One canonical skill markdown that installs globally into Claude Code,
-  Codex, OpenCode, and Gemini CLI; Cursor via a per-project rule file
+- The artifact is HTML, not markdown. Open it in any browser, on any phone.
+- Every constraint, option, and decision is a `<details>` block. Closed by
+  default; click to expand. One page reads at a glance; every supporting
+  detail is one click away.
+- State (the structured JSON) lives inside the HTML in a `<script>` tag.
+  Single source of truth. No sidecar files.
+- Each CLI command auto-commits to the current branch. Git log IS the audit
+  trail; every constraint, every option, every task is its own commit.
+- Pure Node 20+ CLI, zero runtime dependencies, inline CSS, no JS framework.
+- One canonical skill markdown installs globally into Claude Code, Codex,
+  OpenCode, and Gemini CLI; Cursor via a per-project rule file.
 
 ## Install
 
@@ -208,7 +219,7 @@ fall back to copy on filesystems that don't support them.
 ## Development
 
 ```bash
-npm test                          # 16 unit tests, no devDependencies
+npm test                          # 22 unit tests, no devDependencies
 node src/cli.js --help            # local CLI
 ```
 
@@ -223,10 +234,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Related
 
+- [bdigital-public](https://github.com/neurot1cal/bdigital-public) — sibling
+  open-source plugins from the same author. vibesift is one of several.
 - [plannotator](https://github.com/backnotprop/plannotator) — annotate
   agent plans + diffs (interactive). Different shape: workspace, not status.
 - [GitHub Spec Kit](https://github.com/github/spec-kit) — markdown-first
-  spec-driven development.
+  spec-driven development. Vibesift is the HTML answer to the same problem.
+- [Anthropic superpowers](https://github.com/anthropics/superpowers) —
+  brainstorming → write-plan → execute-plan skill flow. Vibesift renders
+  the flow's output as one collapsible HTML page instead of four .md files.
 - [Kiro](https://kiro.dev/) — agentic IDE for spec-driven development.
 - ["The Unreasonable Effectiveness of HTML"](https://simonwillison.net/2026/May/8/unreasonable-effectiveness-of-html/) — the design thesis vibesift runs on.
 

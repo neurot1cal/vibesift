@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="vibesift">
+<meta name="robots" content="noindex">
+<title>Real landing page for vibesift.com</title>
+<style>
+  :root {
+    color-scheme: dark light;
+
+    /* Accents (theme-stable) */
+    --accent: #facc15;        /* yellow-400 — pinning + hero accent */
+    --accent-deep: #ca8a04;   /* yellow-600 — outlines */
+    --positive: #22c55e;      /* green-500 — done, shipped */
+    --warning: #ca8a04;       /* yellow-600 — pending */
+
+    /* Neutrals (overridden in [data-theme="light"]) */
+    --bg: #09090b;
+    --surface: #0f0f12;
+    --surface-2: #18181b;
+    --border: #27272a;
+    --border-strong: #3f3f46;
+    --text: #fafafa;
+    --text-muted: #d4d4d8;
+    --text-dim: #a1a1aa;
+    --text-faint: #71717a;
+    --text-ghost: #52525b;
+
+    /* Semantic backgrounds */
+    --badge-active-bg: #1e3a8a;
+    --badge-active-fg: #bfdbfe;
+    --badge-shipped-bg: #14532d;
+    --badge-shipped-fg: #bbf7d0;
+
+    --decision-bg: #0a0a0a;
+  }
+  [data-theme="light"] {
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --surface-2: #f4f4f5;
+    --border: #e4e4e7;
+    --border-strong: #d4d4d8;
+    --text: #09090b;
+    --text-muted: #27272a;
+    --text-dim: #52525b;
+    --text-faint: #71717a;
+    --text-ghost: #a1a1aa;
+
+    --badge-active-bg: #dbeafe;
+    --badge-active-fg: #1e3a8a;
+    --badge-shipped-bg: #dcfce7;
+    --badge-shipped-fg: #166534;
+
+    --decision-bg: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 1.5rem 1rem 4rem;
+    max-width: 760px;
+    transition: background 150ms ease, color 150ms ease;
+  }
+  header { border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem; position: relative; }
+  .brand-mark {
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.15em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  h1 { font-size: 1.5rem; margin: 0 0 0.25rem; line-height: 1.2; }
+  h2 { font-size: 1.125rem; margin-top: 2rem; margin-bottom: 0.5rem; color: var(--text); }
+  h3 { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin: 1.25rem 0 0.5rem; }
+  p { margin: 0.5rem 0; color: var(--text-muted); }
+  ul, ol { padding-left: 1.25rem; color: var(--text-muted); }
+  li { margin: 0.25rem 0; }
+  a { color: var(--text); }
+  em { color: var(--text-faint); }
+  code { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.875em; color: var(--text-muted); background: var(--surface-2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+  .meta { color: var(--text-dim); font-size: 0.875rem; }
+  .meta a { color: var(--text-dim); }
+  .meta-line { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-top: 0.5rem; }
+  .badge {
+    display: inline-block;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .badge-active { background: var(--badge-active-bg); color: var(--badge-active-fg); }
+  .badge-shipped { background: var(--badge-shipped-bg); color: var(--badge-shipped-fg); }
+  nav { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .nav-item {
+    flex: 1;
+    text-align: center;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--text-dim);
+    font-size: 0.875rem;
+    min-width: 100px;
+  }
+  .nav-active { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 600; }
+  .nav-done { color: var(--text-faint); }
+  .nav-done::after { content: " ✓"; color: var(--positive); }
+  .phase { margin-bottom: 2rem; padding-top: 0.5rem; }
+  .empty { color: var(--text-ghost); font-style: italic; font-size: 0.875rem; }
+  .pending { color: var(--warning); font-size: 0.875rem; padding: 0.625rem 0.875rem; background: rgba(202,138,4,0.08); border-left: 3px solid var(--warning); border-radius: 0 4px 4px 0; }
+  .problem { font-size: 1.0625rem; line-height: 1.6; }
+  .constraints, .options, .tasks { padding-left: 1.25rem; }
+
+  /* Collapsible records — load-bearing for the .md-overload pitch.
+     Closed by default. Summary line shows first sentence; click to expand. */
+  details.record {
+    margin: 0.125rem 0;
+  }
+  details.record > summary {
+    cursor: pointer;
+    list-style: none;
+    color: var(--text-muted);
+    padding: 0.125rem 0 0.125rem 0.875rem;
+    position: relative;
+    border-radius: 3px;
+    transition: color 120ms;
+  }
+  details.record > summary::-webkit-details-marker { display: none; }
+  details.record > summary::before {
+    content: "›";
+    position: absolute;
+    left: 0;
+    top: 0.0625rem;
+    color: var(--text-faint);
+    font-family: ui-monospace, monospace;
+    font-weight: 600;
+    transition: transform 150ms ease, color 150ms ease;
+    transform-origin: 0.4em 0.5em;
+    display: inline-block;
+  }
+  details.record[open] > summary::before {
+    transform: rotate(90deg);
+    color: var(--accent);
+  }
+  details.record > summary:hover { color: var(--text); }
+  details.record > summary:hover::before { color: var(--accent); }
+  details.record > .record-body {
+    margin-top: 0.375rem;
+    padding: 0.625rem 0.875rem 0.625rem 1rem;
+    background: var(--surface-2);
+    border-left: 2px solid var(--accent-deep);
+    border-radius: 0 4px 4px 0;
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+  .record-text { color: var(--text-muted); }
+  .problem details.record > .record-body { font-size: 1rem; }
+
+  .decision {
+    margin-top: 1.5rem;
+    padding: 0.875rem 1rem;
+    background: var(--decision-bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+  }
+  .decision-label {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    font-weight: 600;
+  }
+  .decision p { margin: 0.375rem 0; color: var(--text); font-size: 1rem; }
+  .decision .rationale { color: var(--text-dim); font-size: 0.9375rem; }
+  .decision-time { font-size: 0.75rem; color: var(--text-ghost); }
+  .tasks { list-style: none; padding-left: 0; }
+  .task-mark { display: inline-block; width: 1.25rem; font-weight: 600; }
+  .task-todo .task-mark { color: var(--text-faint); }
+  .task-done .task-mark { color: var(--positive); }
+  .task-done .task-text { color: var(--text-faint); text-decoration: line-through; }
+  .diff-link {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.875rem;
+  }
+  .shipped { color: var(--positive); font-weight: 600; margin-top: 1rem; }
+  .log { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+  .log ol { padding-left: 1.5rem; }
+  .log li { margin: 0.5rem 0; font-size: 0.875rem; }
+  .log-phase {
+    display: inline-block;
+    min-width: 4rem;
+    color: var(--text-faint);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .log-text { color: var(--text-muted); }
+  .log-time { display: block; color: var(--text-ghost); font-size: 0.75rem; margin-top: 0.125rem; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--text-ghost); font-size: 0.75rem; text-align: center; }
+  footer a { color: var(--text-faint); }
+
+  /* Theme toggle — top-right of the page, both themes. */
+  .theme-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font: 0.75rem ui-monospace, SFMono-Regular, monospace;
+    padding: 0.375rem 0.625rem;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--text); }
+</style>
+</head>
+<body>
+<header>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">◐ DARK</button>
+  <div class="brand-mark">vibesift · vibesift-com-landing</div>
+  <h1>Real landing page for vibesift.com</h1>
+  <div class="meta-line">
+    <span class="badge badge-active">Shipping</span>
+    <span><a href="https://github.com/neurot1cal/vibesift">github.com/neurot1cal/vibesift</a></span>
+    <span>branch: <code>feat/vibesift-com-landing</code></span>
+    <span class="meta">updated 2026-05-09 19:18 UTC</span>
+  </div>
+</header>
+<nav><a href="#scope" class="nav-item nav-done">Scope</a><a href="#sift" class="nav-item nav-done">Sift</a><a href="#ship" class="nav-item nav-active">Ship</a></nav>
+<main>
+
+    <section id="scope" class="phase">
+      <h2>Scope</h2>
+      <h3>Problem</h3>
+      <div class="problem"><details class="record"><summary>docs/index.html is the bootstrap placeholder.</summary><div class="record-body">docs/index.html is the bootstrap placeholder. First-time visitors at vibesift.com see &#39;No sessions yet&#39; and zero context about the project — no description, no Scope→Sift→Ship explainer, no link to the GitHub repo, no list of actual sessions. The placeholder shipped because v0.1 used the bootstrap template as a stub; the landing page is now its own feature.</div></details></div>
+      <h3>Constraints</h3>
+      <ul class="constraints"><li><details class="record"><summary>Static HTML at docs/index.html, no build step or framework — matches the zero…</summary><div class="record-body">Static HTML at docs/index.html, no build step or framework — matches the zero-runtime-deps philosophy of the rest of the project.</div></details></li><li><details class="record"><summary>First-30-seconds test: a visitor must learn what vibesift is, what the three …</summary><div class="record-body">First-30-seconds test: a visitor must learn what vibesift is, what the three verbs (Scope, Sift, Ship) mean, and where to find sessions, without scrolling past the fold on a phone.</div></details></li><li><details class="record"><summary>Must list actual sessions present in docs/sessions/, not the placeholder &#39;No …</summary><div class="record-body">Must list actual sessions present in docs/sessions/, not the placeholder &#39;No sessions yet&#39; string. Auto-generation can be v0.2; for now the list can be hand-maintained alongside the canonical dogfood session.</div></details></li><li><details class="record"><summary>Must link to the GitHub repo (neurot1cal/vibesift), npm package (when publish…</summary><div class="record-body">Must link to the GitHub repo (neurot1cal/vibesift), npm package (when published), and the canonical dogfood session at /sessions/v0-1-launch/.</div></details></li><li><details class="record"><summary>Must match the existing dark/light theme variables already defined in src/tem…</summary><div class="record-body">Must match the existing dark/light theme variables already defined in src/template.js so the landing and the session pages feel like one product, not two sites.</div></details></li><li><details class="record"><summary>Must NOT be clobbered by &#39;vibesift bootstrap&#39; — verified that cli.js:304 uses…</summary><div class="record-body">Must NOT be clobbered by &#39;vibesift bootstrap&#39; — verified that cli.js:304 uses {flag:&#39;wx&#39;} so existing index.html is preserved. Don&#39;t regress that guarantee.</div></details></li></ul>
+      <div class="decision">
+         <span class="decision-label">Decision</span>
+         <p>Ship a hand-written static landing at docs/index.html with a hero, a three-verb explainer (Scope, Sift, Ship — what + when), a sessions list seeded with the dogfood session, and a footer with repo + license links. Defer auto-generated session listing to a v0.2 &#39;vibesift index&#39; command. Keep the page under 200 lines of HTML+CSS — this is a status broadcaster, not a product site.</p>
+         <span class="decision-time">2026-05-09 19:02 UTC</span>
+       </div>
+    </section>
+
+    <section id="sift" class="phase">
+      <h2>Sift</h2>
+      <h3>Options considered</h3>
+      <ul class="options"><li><details class="record"><summary>Hand-written static HTML at docs/index.html with a hardcoded sessions list.</summary><div class="record-body">Hand-written static HTML at docs/index.html with a hardcoded sessions list. Fast to ship, zero runtime cost, matches the project&#39;s no-build philosophy. Cost: every new session requires a one-line edit to the index. Acceptable while session count is small.</div></details></li><li><details class="record"><summary>Add a &#39;vibesift index&#39; command that scans docs/sessions/ and regenerates docs…</summary><div class="record-body">Add a &#39;vibesift index&#39; command that scans docs/sessions/ and regenerates docs/index.html from a template every time a session changes phase. Single source of truth, no manual maintenance, but adds a code path and a template to maintain. Better fit once there are 5+ sessions.</div></details></li><li><details class="record"><summary>Client-side: ship a thin index.html with JS that fetches a manifest.json (aut…</summary><div class="record-body">Client-side: ship a thin index.html with JS that fetches a manifest.json (auto-generated by a sister command) and renders the list at page load. Rejected — adds runtime JS to a project that brags about zero deps for a problem that has a static-time solution.</div></details></li></ul>
+      <div class="decision">
+         <span class="decision-label">Chose</span>
+         <p>Option A. Hand-written static landing at docs/index.html. Auto-generation deferred to v0.2 with explicit queue note in CHANGELOG.</p>
+         <div class="rationale"><details class="record"><summary>Option A for v0.1.</summary><div class="record-body">Option A for v0.1. Ship the hand-written landing now; the sessions list has exactly one entry today and adding the second entry is a one-line patch. Option B is queued as a v0.2 task — once the project has 5+ sessions, the maintenance cost of A flips and we add a &#39;vibesift index&#39; command. Option C is rejected: client-side rendering for a problem solvable at write-time violates the zero-runtime-deps brand promise.</div></details></div>
+         <span class="decision-time">2026-05-09 19:02 UTC</span>
+       </div>
+    </section>
+
+    <section id="ship" class="phase">
+      <h2>Ship</h2>
+      <h3>Tasks</h3>
+      <ul class="tasks">
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          <span class="task-text">Read src/template.js — copy the exact :root and [data-theme=light] CSS variables so the landing and session pages share one design system.</span>
+        </li>
+      
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          <span class="task-text">Write docs/index.html: hero (one-sentence pitch + tagline), three-verb explainer (Scope/Sift/Ship as a 3-column grid on desktop, stacked on mobile), sessions list (linking to v0-1-launch and vibesift-com-landing), footer (GitHub repo, license, brand mark).</span>
+        </li>
+      
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          <span class="task-text">Inline a tiny dark/light theme toggle script — same pattern as src/template.js so the toggle persists in localStorage and respects prefers-color-scheme on first paint.</span>
+        </li>
+      
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          <span class="task-text">Verify locally: &#39;python3 -m http.server 8788 -d docs&#39; then curl localhost:8788 and confirm hero text, all three verbs, and both session links render. Astro preview is blocked here so http.server is the correct tool.</span>
+        </li>
+      
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          <span class="task-text">Open PR (linear-history squash-merge per ruleset), watch CI matrix + CodeQL + Dependency Review, merge, then curl https://vibesift.com to confirm new landing replaces the placeholder.</span>
+        </li>
+      </ul>
+      <p><a class="diff-link" href="https://github.com/neurot1cal/vibesift/compare/main...feat/vibesift-com-landing">View diff →</a></p>
+      
+    </section>
+
+    <section class="log">
+      <h2>Decision log</h2>
+      <ol>
+        
+          <li>
+            <span class="log-phase">Scope</span>
+            <span class="log-text">Ship a hand-written static landing at docs/index.html with a hero, a three-verb explainer (Scope, Sift, Ship — what + when), a sessions list seeded with the dogfood session, and a footer with repo + license links. Defer auto-generated session listing to a v0.2 &#39;vibesift index&#39; command. Keep the page under 200 lines of HTML+CSS — this is a status broadcaster, not a product site.</span>
+            <span class="log-time">2026-05-09 19:02 UTC</span>
+          </li>
+        
+          <li>
+            <span class="log-phase">Sift</span>
+            <span class="log-text">Option A. Hand-written static landing at docs/index.html. Auto-generation deferred to v0.2 with explicit queue note in CHANGELOG.</span>
+            <span class="log-time">2026-05-09 19:02 UTC</span>
+          </li>
+        
+      </ol>
+    </section>
+</main>
+<footer>generated by <a href="https://github.com/vibesift/vibesift">vibesift</a> · this page is read-only · the terminal drives the flow</footer>
+<script type="application/json" id="vibesift-state">
+{
+  "schemaVersion": 1,
+  "slug": "vibesift-com-landing",
+  "title": "Real landing page for vibesift.com",
+  "branch": "feat/vibesift-com-landing",
+  "repo": "https://github.com/neurot1cal/vibesift",
+  "phase": "ship",
+  "createdAt": 1778353301743,
+  "updatedAt": 1778354334919,
+  "scope": {
+    "problem": "docs/index.html is the bootstrap placeholder. First-time visitors at vibesift.com see 'No sessions yet' and zero context about the project — no description, no Scope→Sift→Ship explainer, no link to the GitHub repo, no list of actual sessions. The placeholder shipped because v0.1 used the bootstrap template as a stub; the landing page is now its own feature.",
+    "constraints": [
+      "Static HTML at docs/index.html, no build step or framework — matches the zero-runtime-deps philosophy of the rest of the project.",
+      "First-30-seconds test: a visitor must learn what vibesift is, what the three verbs (Scope, Sift, Ship) mean, and where to find sessions, without scrolling past the fold on a phone.",
+      "Must list actual sessions present in docs/sessions/, not the placeholder 'No sessions yet' string. Auto-generation can be v0.2; for now the list can be hand-maintained alongside the canonical dogfood session.",
+      "Must link to the GitHub repo (neurot1cal/vibesift), npm package (when published), and the canonical dogfood session at /sessions/v0-1-launch/.",
+      "Must match the existing dark/light theme variables already defined in src/template.js so the landing and the session pages feel like one product, not two sites.",
+      "Must NOT be clobbered by 'vibesift bootstrap' — verified that cli.js:304 uses {flag:'wx'} so existing index.html is preserved. Don't regress that guarantee."
+    ],
+    "decision": "Ship a hand-written static landing at docs/index.html with a hero, a three-verb explainer (Scope, Sift, Ship — what + when), a sessions list seeded with the dogfood session, and a footer with repo + license links. Defer auto-generated session listing to a v0.2 'vibesift index' command. Keep the page under 200 lines of HTML+CSS — this is a status broadcaster, not a product site.",
+    "decidedAt": 1778353330023
+  },
+  "sift": {
+    "options": [
+      {
+        "text": "Hand-written static HTML at docs/index.html with a hardcoded sessions list. Fast to ship, zero runtime cost, matches the project's no-build philosophy. Cost: every new session requires a one-line edit to the index. Acceptable while session count is small.",
+        "addedAt": 1778353354317
+      },
+      {
+        "text": "Add a 'vibesift index' command that scans docs/sessions/ and regenerates docs/index.html from a template every time a session changes phase. Single source of truth, no manual maintenance, but adds a code path and a template to maintain. Better fit once there are 5+ sessions.",
+        "addedAt": 1778353354441
+      },
+      {
+        "text": "Client-side: ship a thin index.html with JS that fetches a manifest.json (auto-generated by a sister command) and renders the list at page load. Rejected — adds runtime JS to a project that brags about zero deps for a problem that has a static-time solution.",
+        "addedAt": 1778353354563
+      }
+    ],
+    "decision": "Option A. Hand-written static landing at docs/index.html. Auto-generation deferred to v0.2 with explicit queue note in CHANGELOG.",
+    "rationale": "Option A for v0.1. Ship the hand-written landing now; the sessions list has exactly one entry today and adding the second entry is a one-line patch. Option B is queued as a v0.2 task — once the project has 5+ sessions, the maintenance cost of A flips and we add a 'vibesift index' command. Option C is rejected: client-side rendering for a problem solvable at write-time violates the zero-runtime-deps brand promise.",
+    "decidedAt": 1778353354805
+  },
+  "ship": {
+    "tasks": [
+      {
+        "id": 1,
+        "text": "Read src/template.js — copy the exact :root and [data-theme=light] CSS variables so the landing and session pages share one design system.",
+        "done": true
+      },
+      {
+        "id": 2,
+        "text": "Write docs/index.html: hero (one-sentence pitch + tagline), three-verb explainer (Scope/Sift/Ship as a 3-column grid on desktop, stacked on mobile), sessions list (linking to v0-1-launch and vibesift-com-landing), footer (GitHub repo, license, brand mark).",
+        "done": true
+      },
+      {
+        "id": 3,
+        "text": "Inline a tiny dark/light theme toggle script — same pattern as src/template.js so the toggle persists in localStorage and respects prefers-color-scheme on first paint.",
+        "done": true
+      },
+      {
+        "id": 4,
+        "text": "Verify locally: 'python3 -m http.server 8788 -d docs' then curl localhost:8788 and confirm hero text, all three verbs, and both session links render. Astro preview is blocked here so http.server is the correct tool.",
+        "done": true
+      },
+      {
+        "id": 5,
+        "text": "Open PR (linear-history squash-merge per ruleset), watch CI matrix + CodeQL + Dependency Review, merge, then curl https://vibesift.com to confirm new landing replaces the placeholder.",
+        "done": true
+      }
+    ],
+    "diffUrl": "https://github.com/neurot1cal/vibesift/compare/main...feat/vibesift-com-landing",
+    "shippedAt": null
+  },
+  "decisions": [
+    {
+      "phase": "scope",
+      "text": "Ship a hand-written static landing at docs/index.html with a hero, a three-verb explainer (Scope, Sift, Ship — what + when), a sessions list seeded with the dogfood session, and a footer with repo + license links. Defer auto-generated session listing to a v0.2 'vibesift index' command. Keep the page under 200 lines of HTML+CSS — this is a status broadcaster, not a product site.",
+      "decidedAt": 1778353330023
+    },
+    {
+      "phase": "sift",
+      "text": "Option A. Hand-written static landing at docs/index.html. Auto-generation deferred to v0.2 with explicit queue note in CHANGELOG.",
+      "decidedAt": 1778353354805
+    }
+  ]
+}
+</script>
+<script>
+(function(){
+  var KEY='vibesift:theme';
+  var root=document.documentElement;
+  var btn=document.getElementById('theme-toggle');
+  var saved=null;
+  try { saved = localStorage.getItem(KEY); } catch(e) {}
+  var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  var theme = saved || (prefersLight ? 'light' : 'dark');
+  apply(theme);
+  if (btn) btn.addEventListener('click', function(){
+    var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    apply(next);
+    try { localStorage.setItem(KEY, next); } catch(e) {}
+  });
+  function apply(t){
+    root.setAttribute('data-theme', t);
+    if (btn) btn.textContent = t === 'light' ? '◐ DARK' : '◑ LIGHT';
+  }
+})();
+</script>
+</body>
+</html>
