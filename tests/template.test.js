@@ -120,6 +120,33 @@ test('renderRecord falls back to char-truncation when no sentence boundary found
   assert.match(html, /…<\/summary>/);
 });
 
+test('task with agent renders the .task-agent badge', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  advancePhase(s); advancePhase(s);
+  addTask(s, 'wire the badge', { agent: 'alice' });
+  const html = renderHTML(s);
+  assert.match(html, /<span class="task-agent">alice<\/span>/);
+});
+
+test('task agent name is HTML-escaped to prevent injection', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  advancePhase(s); advancePhase(s);
+  addTask(s, 'safe task', { agent: '<script>alert(1)</script>' });
+  const html = renderHTML(s);
+  // The raw script tag must NOT appear inside the rendered task badge.
+  // Slice off the embedded JSON state block (which contains the raw payload
+  // in JSON-escaped form) before asserting.
+  const beforeStateBlock = html.split('id="vibesift-state"')[0];
+  assert.ok(
+    !beforeStateBlock.includes('<script>alert(1)</script>'),
+    'raw script tag must not appear in rendered HTML'
+  );
+  assert.match(
+    beforeStateBlock,
+    /<span class="task-agent">&lt;script&gt;alert\(1\)&lt;\/script&gt;<\/span>/
+  );
+});
+
 test('JSON state block escapes </script> to prevent breakout', () => {
   // Regression test: user-supplied text containing the literal `</script>`
   // would break out of the JSON block and execute as HTML/JS without the
