@@ -1,0 +1,11 @@
+# Default owner for everything
+* @neurot1cal
+
+# Skill content
+/skills/                @neurot1cal
+/src/install.js         @neurot1cal
+
+# Security-critical
+/src/template.js        @neurot1cal
+/SECURITY.md            @neurot1cal
+/.github/workflows/     @neurot1cal
