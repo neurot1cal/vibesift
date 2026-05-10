@@ -41,6 +41,7 @@ export function emptyState({ slug, title, problem = '', branch = '', repo = '' }
       shippedAt: null,
     },
     decisions: [],
+    deployedAt: null,
   };
 }
 
@@ -100,6 +101,15 @@ export function addTask(state, text, opts = {}) {
   if (opts && typeof opts.agent === 'string' && opts.agent.trim()) {
     task.agent = opts.agent.trim();
   }
+  // Optional parent linkage for tree rendering. Validate the parent exists
+  // BEFORE attaching, so a typo'd id surfaces as an error instead of an
+  // orphaned task that the tree renderer can't place.
+  if (opts && opts.parentId !== undefined && opts.parentId !== null) {
+    const pid = Number(opts.parentId);
+    const parent = state.ship.tasks.find(t => t.id === pid);
+    if (!parent) throw new Error(`parent task ${opts.parentId} not found`);
+    task.parentId = pid;
+  }
   state.ship.tasks.push(task);
   state.updatedAt = Date.now();
   return id;
@@ -122,5 +132,16 @@ export function setRationale(state, text) {
 export function setDiffUrl(state, url) {
   state.ship.diffUrl = url;
   state.updatedAt = Date.now();
+  return state;
+}
+
+// Mark the session as deployed to production. Idempotent: the first call
+// stamps the timestamp; subsequent calls are no-ops so the original deploy
+// time is preserved as the canonical "live" moment.
+export function markDeployed(state) {
+  if (state.deployedAt) return state;
+  const now = Date.now();
+  state.deployedAt = now;
+  state.updatedAt = now;
   return state;
 }
