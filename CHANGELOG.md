@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] — 2026-05-09
+
+### Added
+
+- **Visual flow diagrams in the session HTML.** Two new inline SVGs
+  ride along on every rendered page: a 5-stage horizontal pipeline
+  (Idea → Scope → Sift → Ship → Deployed) above the navigation, and
+  an indented task tree inside the Ship section showing parent →
+  child relationships and agent attribution. Both render with
+  zero JS and no external resources, scale via `viewBox` to fit
+  any viewport, and degrade gracefully on browsers without SVG.
+- **`--parent <id>` flag on `vibesift ship <slug> task add`.**
+  Subtasks attach to a parent task by id; the tree renderer fans
+  them out under their parent. Composes with `--agent <name>` so
+  worktree-dispatched work shows up grouped by agent.
+- **`vibesift deploy <slug>` command.** Stamps `state.deployedAt`
+  and auto-commits as `vibesift: deployed <slug>`. Idempotent —
+  the first call wins, subsequent calls log the original timestamp
+  and exit clean. The pipeline graphic advances "Ship" → "Deployed"
+  on the next render.
+- **Schema additions (additive only).** Tasks gain optional
+  `parentId` and `agent` fields; root state gains optional
+  `deployedAt`. Existing v0.2.x sessions remain byte-identical
+  when neither field is set; the renderer treats absent fields
+  as the historical default.
+
+### Internal
+
+- Test count: 33 → 79 (46 new tests across schema migration, new
+  CLI commands, SVG snapshots for known states, and an end-to-end
+  integration covering the full parent + agent + deploy + render
+  path).
+
+[0.2.2]: https://github.com/neurot1cal/vibesift/releases/tag/v0.2.2
+
 ## [0.2.1] — 2026-05-09
 
 ### Fixed
