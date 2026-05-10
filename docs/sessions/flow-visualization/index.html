@@ -278,7 +278,12 @@
       <h2>Sift</h2>
       <h3>Options considered</h3>
       <ul class="options"><li><details class="record"><summary>Pipeline orientation: horizontal SVG pill-bar with arrows between 5 stages (l…</summary><div class="record-body">Pipeline orientation: horizontal SVG pill-bar with arrows between 5 stages (looks &#39;pipeline-y&#39;; mobile at 375px is tight - &#39;Deployed&#39; label may need abbreviation or smaller font)</div></details></li><li><details class="record"><summary>Pipeline orientation: vertical SVG stack of 5 stages (mobile-native; less rec…</summary><div class="record-body">Pipeline orientation: vertical SVG stack of 5 stages (mobile-native; less recognizably a &#39;pipeline&#39;)</div></details></li><li><details class="record"><summary>Tree style: inline SVG with horizontal indented boxes + L-shaped connectors (…</summary><div class="record-body">Tree style: inline SVG with horizontal indented boxes + L-shaped connectors (file-explorer feel, naturally narrow)</div></details></li><li><details class="record"><summary>Tree style: inline SVG top-down org-chart (visually impressive; needs horizon…</summary><div class="record-body">Tree style: inline SVG top-down org-chart (visually impressive; needs horizontal scroll on narrow screens)</div></details></li><li><details class="record"><summary>Schema: add &#39;parent_id&#39; field on flat task array (simple to render, easy to q…</summary><div class="record-body">Schema: add &#39;parent_id&#39; field on flat task array (simple to render, easy to query)</div></details></li><li><details class="record"><summary>Schema: nested &#39;subtasks&#39; array on each task (preserves hierarchy structurall…</summary><div class="record-body">Schema: nested &#39;subtasks&#39; array on each task (preserves hierarchy structurally, requires recursion)</div></details></li></ul>
-      <p class="pending">No selection yet.</p>
+      <div class="decision">
+         <span class="decision-label">Chose</span>
+         <p>Pipeline = horizontal SVG pill-bar with media-query font scale for mobile. Tree = inline SVG with indented boxes and L-shaped connectors. Schema = optional &#39;parent_id&#39; field on flat tasks array (with optional &#39;agent&#39; field per task).</p>
+         <div class="rationale"><details class="record"><summary>Horizontal pipeline preserves left-to-right time metaphor that signals &#39;flow&#39;…</summary><div class="record-body">Horizontal pipeline preserves left-to-right time metaphor that signals &#39;flow&#39; at a glance; 5 pills + arrows fit at 375px with a 10px label font. Indented-boxes tree scales to any depth without horizontal overflow on mobile and uses the file-explorer mental model (familiar to technical readers). parent_id on flat tasks adds one optional field rather than restructuring; preserves existing iteration and matches vibesift&#39;s flat-typed-records state pattern.</div></details></div>
+         <span class="decision-time">2026-05-10 02:07 UTC</span>
+       </div>
     </section>
 
     <section id="ship" class="phase">
@@ -299,6 +304,12 @@
             <span class="log-time">2026-05-10 02:05 UTC</span>
           </li>
         
+          <li>
+            <span class="log-phase">Sift</span>
+            <span class="log-text">Pipeline = horizontal SVG pill-bar with media-query font scale for mobile. Tree = inline SVG with indented boxes and L-shaped connectors. Schema = optional &#39;parent_id&#39; field on flat tasks array (with optional &#39;agent&#39; field per task).</span>
+            <span class="log-time">2026-05-10 02:07 UTC</span>
+          </li>
+        
       </ol>
     </section>
 </main>
@@ -312,7 +323,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "sift",
   "createdAt": 1778377559276,
-  "updatedAt": 1778378851465,
+  "updatedAt": 1778378851580,
   "scope": {
     "problem": "Sessions need a top-level ideation-to-production flow graphic and a tree view of the implementation phase, so reviewers can see parallel agent fan-out and overall progress at a glance instead of reading prose.",
     "constraints": [
@@ -353,9 +364,9 @@
         "addedAt": 1778378819623
       }
     ],
-    "decision": null,
+    "decision": "Pipeline = horizontal SVG pill-bar with media-query font scale for mobile. Tree = inline SVG with indented boxes and L-shaped connectors. Schema = optional 'parent_id' field on flat tasks array (with optional 'agent' field per task).",
     "rationale": "Horizontal pipeline preserves left-to-right time metaphor that signals 'flow' at a glance; 5 pills + arrows fit at 375px with a 10px label font. Indented-boxes tree scales to any depth without horizontal overflow on mobile and uses the file-explorer mental model (familiar to technical readers). parent_id on flat tasks adds one optional field rather than restructuring; preserves existing iteration and matches vibesift's flat-typed-records state pattern.",
-    "decidedAt": null
+    "decidedAt": 1778378851580
   },
   "ship": {
     "tasks": [],
@@ -367,6 +378,11 @@
       "phase": "scope",
       "text": "Ship in v0.2.2 as additive CLI changes only: 'ship subtask add', 'ship task add --agent', and 'deploy' commands, plus CLI-generated inline SVG for a 5-stage pipeline header and an indented implementation tree. Zero-runtime HTML preserved; existing v0.2.x sessions render unchanged.",
       "decidedAt": 1778378749351
+    },
+    {
+      "phase": "sift",
+      "text": "Pipeline = horizontal SVG pill-bar with media-query font scale for mobile. Tree = inline SVG with indented boxes and L-shaped connectors. Schema = optional 'parent_id' field on flat tasks array (with optional 'agent' field per task).",
+      "decidedAt": 1778378851580
     }
   ]
 }
