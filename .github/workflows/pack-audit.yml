@@ -59,6 +59,8 @@ jobs:
             src/index.js
             src/install.js
             src/state.js
+            src/svg-pipeline.js
+            src/svg-tree.js
             src/template.js
         run: |
           printf "%s" "$EXPECTED_FILES" | grep -v '^$' | sort > /tmp/expected.txt
