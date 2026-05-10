@@ -27,14 +27,14 @@ Commands
   vibesift ship  <slug> task add "..." [--agent <name>] [--parent <id>] [--no-commit]
   vibesift ship  <slug> task done <id> [--no-commit]
   vibesift ship  <slug> diff <url> [--no-commit]   (manually set the ship diff URL — e.g. a merged PR link)
-  vibesift deploy <slug> [--no-commit]   (stamp deployedAt — idempotent; reports existing date if already deployed)
+  vibesift deploy <slug> [--at <iso-date>] [--no-commit]   (stamp deployedAt — idempotent; --at backfills with a historical date)
   vibesift decide <slug> --phase <scope|sift|ship> --text "..." [--no-commit]
   vibesift advance <slug> [--no-commit]
   vibesift render <slug> [--no-commit]   (re-render HTML from existing state — use after template upgrades)
   vibesift status <slug>
   vibesift list
   vibesift index       (regenerates the landing's sessions list from docs/sessions/)
-  vibesift bootstrap   (run once per repo: scaffolds docs/sessions/ + index.html)
+  vibesift bootstrap [--force]   (run once per repo: scaffolds docs/sessions/ + index.html — fails on dirty tree unless --force)
   vibesift install     (symlinks the skill into every detected agent harness)
   vibesift harnesses   (lists detected agent harnesses)
 
@@ -144,6 +144,22 @@ function cmdInit(argv) {
       message: `vibesift: scope started for ${slug}`,
     });
     reportCommit(result, `created ${path}`);
+    // Auto-regenerate the landing index so the new session appears at
+    // vibesift.com without a separate `vibesift index` step. Done as its
+    // own commit (separate from the init commit) so the audit trail is
+    // accurate: init created the session, index regen updated the listing.
+    // Best-effort — failure here doesn't undo the init.
+    try {
+      const root = repoRoot(cwd);
+      if (root) {
+        const idx = regenerateLandingIndex({ repoRoot: root });
+        if (idx.changed) {
+          autoCommit({ paths: [idx.path], message: 'vibesift: index regenerated' });
+        }
+      }
+    } catch (e) {
+      process.stderr.write(`vibesift: index regen skipped — ${e.message}\n`);
+    }
   }
   process.stdout.write(`session: ${slug}\nstatus: scoping\nfile: docs/sessions/${slug}/index.html\n`);
 }
@@ -355,9 +371,9 @@ function cmdAdvance(argv) {
 }
 
 function cmdDeploy(argv) {
-  const { argv: rest, noCommit } = extractNoCommit(argv);
-  const slug = rest[0];
-  if (!slug) die('usage: vibesift deploy <slug> [--no-commit]');
+  const { _: pos, flags } = parseArgs(argv);
+  const slug = pos[0];
+  if (!slug) die('usage: vibesift deploy <slug> [--at <iso-date>] [--no-commit]');
   const { state, path } = loadState(slug);
   // Idempotent: if already deployed, surface the existing timestamp on
   // stderr and exit 0 without rewriting the file or creating a commit.
@@ -365,8 +381,18 @@ function cmdDeploy(argv) {
     process.stderr.write(`vibesift: already deployed at ${new Date(state.deployedAt).toISOString()}\n`);
     return;
   }
-  markDeployed(state);
-  const r = saveAndCommit(state, path, `vibesift: deployed ${slug}`, { commit: !noCommit });
+  // --at <iso-date>: retroactive backfill for sessions that genuinely
+  // shipped earlier (e.g. v0.1.x sessions that predate this command). The
+  // value is parsed via Date.parse, which accepts ISO 8601 plus most other
+  // common shapes; if it's not parseable to a finite ms, fail fast.
+  const opts = {};
+  if (flags.at && flags.at !== true) {
+    const ms = Date.parse(flags.at);
+    if (!Number.isFinite(ms)) die(`--at: could not parse "${flags.at}" as a date`);
+    opts.at = ms;
+  }
+  markDeployed(state, opts);
+  const r = saveAndCommit(state, path, `vibesift: deployed ${slug}`, { commit: !flags['no-commit'] });
   reportCommit(r, `deployed ${slug} at ${new Date(state.deployedAt).toISOString()}`);
 }
 
@@ -448,6 +474,11 @@ function cmdList() {
   }
 }
 
+// Bootstrap stub. Contains a minimal <section class="sessions"> block with
+// an empty heading so index-renderer can migrate markers in on the next
+// `vibesift index` (or auto-index after `vibesift init`). Repos can replace
+// this whole file with a richer landing page later — index regen preserves
+// everything outside the START/END markers.
 const INDEX_TEMPLATE = `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -461,11 +492,17 @@ const INDEX_TEMPLATE = `<!doctype html>
   a { color: #fafafa; text-decoration: none; font-weight: 600; }
   a:hover { text-decoration: underline; }
   .empty { color: #71717a; font-style: italic; }
+  .sess-row { display: flex; gap: 0.75rem; padding: 0.75rem 1rem; border: 1px solid #27272a; border-radius: 6px; margin: 0.5rem 0; }
+  .sess-status { font-family: ui-monospace, monospace; font-size: 0.75rem; text-transform: uppercase; color: #22c55e; }
+  .sess-status.is-active { color: #facc15; }
   .footer { margin-top: 3rem; color: #52525b; font-size: 0.75rem; text-align: center; }
 </style>
 </head><body>
 <h1>vibesift sessions</h1>
-<p class="empty">No sessions yet. Run <code>vibesift init &lt;slug&gt; --title "..."</code> to create one.</p>
+<section class="sessions">
+  <h3>Sessions</h3>
+  <p class="empty">No sessions yet. Run <code>vibesift init &lt;slug&gt; --title "..."</code> to create one.</p>
+</section>
 <div class="footer">read-only status pages · the terminal drives the flow</div>
 </body></html>
 `;
@@ -510,9 +547,35 @@ function cmdIndex() {
   reportCommit(r, `index regenerated (${result.sessions.length} session${result.sessions.length === 1 ? '' : 's'})`);
 }
 
-function cmdBootstrap() {
+function cmdBootstrap(argv = []) {
   const root = repoRoot();
   if (!root) die('not in a git repository');
+  // Warn if the working tree is dirty. Bootstrap auto-commits and runs
+  // exactly once per repo, often early in setup — the user is unlikely to
+  // want their unrelated in-progress changes mixed into the bootstrap
+  // commit. autoCommit only stages docs/index.html explicitly, so dirty
+  // files won't actually be pulled in, but a dirty tree usually means the
+  // user is in the middle of something else and bootstrap is happening
+  // accidentally. --force skips the warning.
+  if (!argv.includes('--force')) {
+    try {
+      const status = execFileSync('git', ['-C', root, 'status', '--porcelain'], {
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).toString().trim();
+      if (status) {
+        const lines = status.split('\n').length;
+        process.stderr.write(
+          `vibesift: working tree has ${lines} uncommitted file${lines === 1 ? '' : 's'}.\n` +
+          `Bootstrap will auto-commit only docs/index.html (other files won't be touched), ` +
+          `but you may want a clean tree first. Pass --force to skip this check.\n`
+        );
+        die('aborted on dirty tree (rerun with --force to override)', 1);
+      }
+    } catch (e) {
+      // If git status itself fails, don't block bootstrap — fall through.
+      if (e.message && e.message.includes('aborted on dirty tree')) throw e;
+    }
+  }
   const dir = join(root, 'docs', 'sessions');
   mkdirSync(dir, { recursive: true });
   const indexPath = join(root, 'docs', 'index.html');
@@ -549,7 +612,7 @@ function main() {
     case 'status': return cmdStatus(rest);
     case 'list': return cmdList();
     case 'index': return cmdIndex();
-    case 'bootstrap': return cmdBootstrap();
+    case 'bootstrap': return cmdBootstrap(rest);
     case 'install': return cmdInstall(rest);
     case 'harnesses': return cmdHarnesses();
     default: die(`unknown command: ${cmd}\n\n${HELP}`);

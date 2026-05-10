@@ -1,6 +1,6 @@
 {
   "name": "vibesift",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "One CLI, one HTML page per agent session. Read-only, auto-committed, collapsible records. Scope. Sift. Ship.",
   "type": "module",
   "bin": {
