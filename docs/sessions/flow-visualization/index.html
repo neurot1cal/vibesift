@@ -255,7 +255,7 @@
     <span class="badge badge-active">Sifting</span>
     <span><a href="https://github.com/neurot1cal/vibesift">github.com/neurot1cal/vibesift</a></span>
     <span>branch: <code>main</code></span>
-    <span class="meta">updated 2026-05-10 02:06 UTC</span>
+    <span class="meta">updated 2026-05-10 02:07 UTC</span>
   </div>
 </header>
 <nav><a href="#scope" class="nav-item nav-done">Scope</a><a href="#sift" class="nav-item nav-active">Sift</a><a href="#ship" class="nav-item">Ship</a></nav>
@@ -312,7 +312,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "sift",
   "createdAt": 1778377559276,
-  "updatedAt": 1778378819623,
+  "updatedAt": 1778378851465,
   "scope": {
     "problem": "Sessions need a top-level ideation-to-production flow graphic and a tree view of the implementation phase, so reviewers can see parallel agent fan-out and overall progress at a glance instead of reading prose.",
     "constraints": [
@@ -354,7 +354,7 @@
       }
     ],
     "decision": null,
-    "rationale": "",
+    "rationale": "Horizontal pipeline preserves left-to-right time metaphor that signals 'flow' at a glance; 5 pills + arrows fit at 375px with a 10px label font. Indented-boxes tree scales to any depth without horizontal overflow on mobile and uses the file-explorer mental model (familiar to technical readers). parent_id on flat tasks adds one optional field rather than restructuring; preserves existing iteration and matches vibesift's flat-typed-records state pattern.",
     "decidedAt": null
   },
   "ship": {
