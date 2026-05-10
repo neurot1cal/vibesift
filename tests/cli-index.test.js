@@ -125,3 +125,16 @@ test('renderSessionRow encodes status, escapes title, and respects shipped state
   assert.match(scopingRow, /class="sess-status is-active">active · scope/);
   assert.match(scopingRow, /<span class="sess-date">2026-05-01<\/span>/);
 });
+
+test('renderSessionRow shows deployed sessions as shipped even without a ship decision', () => {
+  // v0.1.x-era sessions and any session marked via `vibesift deploy <slug>`
+  // before the explicit `decide --phase ship` pattern existed. They have
+  // state.deployedAt but no state.ship.shippedAt — should still render as
+  // shipped (green pip) on the landing.
+  const deployedOnly = emptyState({ slug: 'legacy-deployed', title: 'Legacy' });
+  advancePhase(deployedOnly); advancePhase(deployedOnly);
+  deployedOnly.deployedAt = Date.UTC(2026, 4, 1);
+  // Note: NOT setting state.ship.shippedAt.
+  const row = renderSessionRow(deployedOnly);
+  assert.match(row, /class="sess-status">shipped/);
+});
