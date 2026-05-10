@@ -252,7 +252,7 @@
   <div class="brand-mark">vibesift · flow-visualization</div>
   <h1>Visual flow diagrams: top-level pipeline + agent fan-out tree</h1>
   <div class="meta-line">
-    <span class="badge badge-active">Shipping</span>
+    <span class="badge badge-shipped">Shipped</span>
     <span><a href="https://github.com/neurot1cal/vibesift">github.com/neurot1cal/vibesift</a></span>
     <span>branch: <code>main</code></span>
     <span class="meta">updated 2026-05-10 02:34 UTC</span>
@@ -339,7 +339,7 @@
         </li>
       </ul>
       
-      
+      <p class="shipped">Shipped 2026-05-10 02:34 UTC.</p>
     </section>
 
     <section class="log">
@@ -358,6 +358,12 @@
             <span class="log-time">2026-05-10 02:07 UTC</span>
           </li>
         
+          <li>
+            <span class="log-phase">Ship</span>
+            <span class="log-text">v0.2.2 ready for review on PR #24. Tag + npm publish gated on owner approval — all build, test, and docs work landed; CI must go green before merge.</span>
+            <span class="log-time">2026-05-10 02:34 UTC</span>
+          </li>
+        
       </ol>
     </section>
 </main>
@@ -371,7 +377,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "ship",
   "createdAt": 1778377559276,
-  "updatedAt": 1778380485384,
+  "updatedAt": 1778380485504,
   "scope": {
     "problem": "Sessions need a top-level ideation-to-production flow graphic and a tree view of the implementation phase, so reviewers can see parallel agent fan-out and overall progress at a glance instead of reading prose.",
     "constraints": [
@@ -460,7 +466,7 @@
       }
     ],
     "diffUrl": null,
-    "shippedAt": null
+    "shippedAt": 1778380485504
   },
   "decisions": [
     {
@@ -472,6 +478,11 @@
       "phase": "sift",
       "text": "Pipeline = horizontal SVG pill-bar with media-query font scale for mobile. Tree = inline SVG with indented boxes and L-shaped connectors. Schema = optional 'parent_id' field on flat tasks array (with optional 'agent' field per task).",
       "decidedAt": 1778378851580
+    },
+    {
+      "phase": "ship",
+      "text": "v0.2.2 ready for review on PR #24. Tag + npm publish gated on owner approval — all build, test, and docs work landed; CI must go green before merge.",
+      "decidedAt": 1778380485504
     }
   ]
 }
