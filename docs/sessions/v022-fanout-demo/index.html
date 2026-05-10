@@ -307,7 +307,7 @@
     <section id="ship" class="phase">
       <h2>Ship</h2>
       <h3>Tasks</h3>
-      <div class="ship-tree"><svg xmlns="http://www.w3.org/2000/svg" class="task-tree" viewBox="0 0 374 56" width="374" height="56" preserveAspectRatio="xMinYMin meet" role="img" aria-label="Implementation tree: 2 tasks across 2 agents, 0 done"><title>Implementation tree: 2 tasks across 2 agents, 0 done</title><path class="tree-connector" d="M 13 12 L 13 36 L 32 36" stroke="#52525b" stroke-width="1" fill="none"/><circle class="task-status task-status-todo" cx="13" cy="12" r="4.5" fill="none" stroke="#71717a" stroke-width="1.5"/><text class="task-label" x="28" y="12" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#d4d4d8">Coordinate: scope shape + acc…</text><rect class="task-agent-badge" x="270" y="5" width="36" height="14" rx="3" ry="3" fill="#facc15"/><text class="task-agent-label" x="288" y="12" text-anchor="middle" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="600" fill="#09090b">main</text><circle class="task-status task-status-todo" cx="37" cy="36" r="4.5" fill="none" stroke="#71717a" stroke-width="1.5"/><text class="task-label" x="52" y="36" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#d4d4d8">Schema: capture template vers…</text><rect class="task-agent-badge" x="294" y="29" width="72" height="14" rx="3" ry="3" fill="#facc15"/><text class="task-agent-label" x="330" y="36" text-anchor="middle" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="600" fill="#09090b">worktree-A</text></svg></div>
+      <div class="ship-tree"><svg xmlns="http://www.w3.org/2000/svg" class="task-tree" viewBox="0 0 374 80" width="374" height="80" preserveAspectRatio="xMinYMin meet" role="img" aria-label="Implementation tree: 3 tasks across 3 agents, 0 done"><title>Implementation tree: 3 tasks across 3 agents, 0 done</title><path class="tree-connector" d="M 13 12 L 13 36 L 32 36" stroke="#52525b" stroke-width="1" fill="none"/><path class="tree-connector" d="M 13 12 L 13 60 L 32 60" stroke="#52525b" stroke-width="1" fill="none"/><circle class="task-status task-status-todo" cx="13" cy="12" r="4.5" fill="none" stroke="#71717a" stroke-width="1.5"/><text class="task-label" x="28" y="12" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#d4d4d8">Coordinate: scope shape + acc…</text><rect class="task-agent-badge" x="270" y="5" width="36" height="14" rx="3" ry="3" fill="#facc15"/><text class="task-agent-label" x="288" y="12" text-anchor="middle" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="600" fill="#09090b">main</text><circle class="task-status task-status-todo" cx="37" cy="36" r="4.5" fill="none" stroke="#71717a" stroke-width="1.5"/><text class="task-label" x="52" y="36" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#d4d4d8">Schema: capture template vers…</text><rect class="task-agent-badge" x="294" y="29" width="72" height="14" rx="3" ry="3" fill="#facc15"/><text class="task-agent-label" x="330" y="36" text-anchor="middle" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="600" fill="#09090b">worktree-A</text><circle class="task-status task-status-todo" cx="37" cy="60" r="4.5" fill="none" stroke="#71717a" stroke-width="1.5"/><text class="task-label" x="52" y="60" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#d4d4d8">CLI: thread captured version …</text><rect class="task-agent-badge" x="294" y="53" width="72" height="14" rx="3" ry="3" fill="#facc15"/><text class="task-agent-label" x="330" y="60" text-anchor="middle" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="600" fill="#09090b">worktree-B</text></svg></div>
       <ul class="tasks">
         <li class="task-todo">
           <span class="task-mark">·</span>
@@ -319,6 +319,12 @@
           <span class="task-mark">·</span>
           <span class="task-agent">worktree-A</span>
           <span class="task-text">Schema: capture template version at vibesift init in state.js</span>
+        </li>
+      
+        <li class="task-todo">
+          <span class="task-mark">·</span>
+          <span class="task-agent">worktree-B</span>
+          <span class="task-text">CLI: thread captured version through to render, override via --template-version flag</span>
         </li>
       </ul>
       <p><a class="diff-link" href="https://github.com/neurot1cal/vibesift/compare/main...chore/render-fix-and-demo">View diff →</a></p>
@@ -354,7 +360,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "ship",
   "createdAt": 1778421720970,
-  "updatedAt": 1778421729111,
+  "updatedAt": 1778421729228,
   "scope": {
     "problem": "Show what an actually-fanned-out vibesift session looks like. flow-visualization shipped with all 8 tasks flat; this session uses --parent and --agent on real planned v0.2.3 work so the tree visualization has structure to render.",
     "constraints": [
@@ -392,6 +398,13 @@
         "text": "Schema: capture template version at vibesift init in state.js",
         "done": false,
         "agent": "worktree-A",
+        "parentId": 1
+      },
+      {
+        "id": 3,
+        "text": "CLI: thread captured version through to render, override via --template-version flag",
+        "done": false,
+        "agent": "worktree-B",
         "parentId": 1
       }
     ],
