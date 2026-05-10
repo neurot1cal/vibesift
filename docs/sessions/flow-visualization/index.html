@@ -295,6 +295,12 @@
           
           <span class="task-text">Schema: add optional parent_id and agent fields to task records; migrate existing sessions safely (no-op if absent)</span>
         </li>
+      
+        <li class="task-todo">
+          <span class="task-mark">·</span>
+          
+          <span class="task-text">CLI: add &#39;ship subtask add &lt;parent_id&gt; ...&#39;, &#39;--agent&#39; flag on &#39;ship task add&#39;, and &#39;deploy &lt;slug&gt;&#39; commands</span>
+        </li>
       </ul>
       
       
@@ -329,7 +335,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "ship",
   "createdAt": 1778377559276,
-  "updatedAt": 1778378887918,
+  "updatedAt": 1778378888035,
   "scope": {
     "problem": "Sessions need a top-level ideation-to-production flow graphic and a tree view of the implementation phase, so reviewers can see parallel agent fan-out and overall progress at a glance instead of reading prose.",
     "constraints": [
@@ -379,6 +385,11 @@
       {
         "id": 1,
         "text": "Schema: add optional parent_id and agent fields to task records; migrate existing sessions safely (no-op if absent)",
+        "done": false
+      },
+      {
+        "id": 2,
+        "text": "CLI: add 'ship subtask add \u003cparent_id\u003e ...', '--agent' flag on 'ship task add', and 'deploy \u003cslug\u003e' commands",
         "done": false
       }
     ],
