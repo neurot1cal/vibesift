@@ -238,6 +238,18 @@ const STYLES = `
     text-transform: uppercase;
     margin-bottom: 0.5rem;
   }
+  .brand-mark .brand-home {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px dotted transparent;
+    transition: color 120ms, border-color 120ms;
+  }
+  .brand-mark .brand-home:hover,
+  .brand-mark .brand-home:focus-visible {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    outline: none;
+  }
   h1 { font-size: 1.5rem; margin: 0 0 0.25rem; line-height: 1.2; }
   h2 { font-size: 1.125rem; margin-top: 2rem; margin-bottom: 0.5rem; color: var(--text); }
   h3 { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin: 1.25rem 0 0.5rem; }
@@ -483,7 +495,7 @@ export function renderHTML(state) {
 <body>
 <header>
   <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">◐ DARK</button>
-  <div class="brand-mark">vibesift · ${escapeHtml(state.slug)}</div>
+  <div class="brand-mark"><a class="brand-home" href="../../" aria-label="Back to vibesift home">vibesift</a> · ${escapeHtml(state.slug)}</div>
   <h1>${escapeHtml(state.title)}</h1>
   <div class="meta-line">
     <span class="badge badge-${badge.tone}">${badge.text}</span>

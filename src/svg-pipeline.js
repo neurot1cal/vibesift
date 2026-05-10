@@ -36,12 +36,16 @@ function escapeAttr(s) {
 
 // Map session state → which stage index is current.
 // Idea is NEVER current; by the time we render anything, init has happened.
-// scope/sift/ship phase values map to stages 1/2/3. ship + deployedAt → 4.
-// Falls back to "Scope" (index 1) for any unrecognized phase shape so the
-// SVG never throws on a partial / future state object.
+// scope/sift/ship phase values map to stages 1/2/3.
+// deployedAt set → return STAGES.length (5), one past the last stage. Every
+// stage's index is then strictly less than current → all render as
+// 'completed' (green) and there is no 'current' (yellow) pill. This signals
+// "lifecycle concluded" rather than "actively in production." Falls back to
+// "Scope" (index 1) for any unrecognized phase shape.
 function currentStageIndex(state) {
   const s = state || {};
-  if (s.phase === 'ship') return s.deployedAt ? 4 : 3;
+  if (s.deployedAt) return STAGES.length;
+  if (s.phase === 'ship') return 3;
   if (s.phase === 'sift') return 2;
   if (s.phase === 'scope') return 1;
   return 1;
@@ -119,8 +123,12 @@ export function renderPipeline(state) {
       parts.push(connectorFor(status, connectorX));
     }
   }
-  const currentLabel = STAGES[current];
-  const title = `Pipeline: current stage ${currentLabel}`;
+  // When current === STAGES.length, the lifecycle is concluded (deployedAt
+  // is set). STAGES[current] would be undefined; describe the state instead
+  // so screen readers get the right framing.
+  const title = current >= STAGES.length
+    ? 'Pipeline: lifecycle concluded · deployed'
+    : `Pipeline: current stage ${STAGES[current]}`;
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" class="pipeline" ` +
       `viewBox="0 0 ${VB_W} ${VB_H}" ` +
