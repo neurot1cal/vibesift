@@ -67,27 +67,41 @@ function nav(state) {
 
 function scopeSection(state) {
   const s = state.scope;
-  const constraints = s.constraints.length
-    ? `<ul class="constraints">${s.constraints.map(c => `<li>${renderRecord(c)}</li>`).join('')}</ul>`
-    : '<p class="empty">No constraints recorded.</p>';
-  const decision = s.decision
-    ? `<div class="decision">
-         <span class="decision-label">Decision</span>
-         <p>${escapeHtml(s.decision)}</p>
-         <span class="decision-time">${fmtDate(s.decidedAt)}</span>
-       </div>`
-    : '<p class="pending">Pending decision.</p>';
+  // Scope-decision is labeled "Approach" (not "Decision") to distinguish it
+  // visually from sift's product-choice decision: scope's decision is the
+  // FRAMING approach that drives the constraints, sift's is the option you
+  // picked from a list. Two different concepts, two different labels.
+  // Reordered: Problem → Approach → Constraints. The approach drives the
+  // constraints, so it sits above them; previously it floated at the bottom
+  // of the section adjacent to Sift's heading and read as misplaced.
   const problemBlock = s.problem
     ? `<div class="problem">${renderRecord(s.problem)}</div>`
     : '<p class="empty">Not set.</p>';
+  const approachBlock = s.decision
+    ? `<div class="decision">
+         <span class="decision-label">Approach</span>
+         <p>${escapeHtml(s.decision)}</p>
+         <span class="decision-time">${fmtDate(s.decidedAt)}</span>
+       </div>`
+    : '';
+  const constraints = s.constraints.length
+    ? `<ul class="constraints">${s.constraints.map(c => `<li>${renderRecord(c)}</li>`).join('')}</ul>`
+    : '<p class="empty">No constraints recorded.</p>';
+  // "Pending approach" only renders during active scoping (no approach set
+  // yet). After the approach is recorded, the box itself replaces the
+  // prompt — no need to keep both.
+  const pendingBlock = !s.decision
+    ? '<p class="pending">Approach not yet set.</p>'
+    : '';
   return `
     <section id="scope" class="phase">
       <h2>Scope</h2>
       <h3>Problem</h3>
       ${problemBlock}
+      ${approachBlock}
       <h3>Constraints</h3>
       ${constraints}
-      ${decision}
+      ${pendingBlock}
     </section>`;
 }
 

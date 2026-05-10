@@ -214,6 +214,39 @@ test('ship-tree SVG is absent when no tasks', () => {
   assert.doesNotMatch(html, /class="ship-tree"/);
 });
 
+test('scope decision is labeled "Approach" and rendered before constraints', () => {
+  const s = emptyState({ slug: 'a', title: 'A', problem: 'a real problem' });
+  addConstraint(s, 'a constraint');
+  appendDecision(s, 'scope', 'pick option X for reasons');
+  const html = renderHTML(s);
+  // Label is "Approach", not "Decision".
+  assert.match(html, /<span class="decision-label">Approach<\/span>/);
+  assert.doesNotMatch(html, /<span class="decision-label">Decision<\/span>/);
+  // The approach block appears BEFORE the Constraints heading in source order.
+  const scopeSection = html.split('<h2>Scope</h2>')[1].split('<section id="sift"')[0];
+  const approachIdx = scopeSection.indexOf('<span class="decision-label">Approach');
+  const constraintsHeadingIdx = scopeSection.indexOf('<h3>Constraints</h3>');
+  assert.ok(approachIdx > 0, 'approach block must be present');
+  assert.ok(constraintsHeadingIdx > 0, 'constraints heading must be present');
+  assert.ok(approachIdx < constraintsHeadingIdx, 'approach must precede constraints heading');
+});
+
+test('scope renders "Approach not yet set" prompt before approach is recorded', () => {
+  const s = emptyState({ slug: 'a', title: 'A', problem: 'p' });
+  addConstraint(s, 'c1');
+  const html = renderHTML(s);
+  assert.match(html, /Approach not yet set/);
+  assert.doesNotMatch(html, /<span class="decision-label">Approach<\/span>/);
+});
+
+test('sift decision label remains "Chose" — only scope was relabeled', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  advancePhase(s);
+  appendDecision(s, 'sift', 'option B');
+  const html = renderHTML(s);
+  assert.match(html, /<span class="decision-label">Chose<\/span>/);
+});
+
 test('brand-mark links back to the docs root', () => {
   const s = emptyState({ slug: 'p', title: 'P' });
   const html = renderHTML(s);

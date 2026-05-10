@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.5] — 2026-05-10
+
+### Changed
+
+- **Scope's decision is now labeled "Approach" and rendered before
+  constraints.** Previously labeled "Decision" and placed at the bottom
+  of the scope section, it visually competed with sift's product-choice
+  decision (same yellow box, same prominence) and floated near the next
+  section's heading where it read as misplaced. New layout:
+  `Problem → Approach → Constraints`. The approach drives the
+  constraints, so it sits above them; the relabel distinguishes
+  "framing approach" from sift's "option you picked." Sift's "Chose"
+  label is unchanged.
+- **"Pending decision" prompt → "Approach not yet set"** to match the
+  new label. Only renders when no approach has been recorded yet.
+
+[0.2.5]: https://github.com/neurot1cal/vibesift/releases/tag/v0.2.5
+
 ## [0.2.4] — 2026-05-10
 
 ### Added
