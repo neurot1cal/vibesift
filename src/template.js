@@ -393,15 +393,21 @@ const STYLES = `
   footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--text-ghost); font-size: 0.75rem; text-align: center; }
   footer a { color: var(--text-faint); }
 
-  /* Pipeline + ship-tree SVG containers. The SVGs themselves use viewBox
-     and preserveAspectRatio so they scale to the container; the wrapper
-     just constrains width and provides vertical breathing room. */
+  /* Pipeline + ship-tree SVG containers. Pipeline scales width:100% so the
+     5-stage strip fills the page on any viewport. CSS font-size overrides
+     the SVG's font-size attribute so labels stay readable when the SVG
+     scales down on mobile (viewBox 500 → ~343px container = 0.69x scale,
+     which would render the inline 10-unit attribute as ~7px without an
+     override). Tree keeps its natural width with overflow-x:auto so it
+     doesn't blow up to fill a wide desktop column. */
   .pipeline { margin: 0 0 1.25rem; }
   .pipeline svg { display: block; width: 100%; max-width: 100%; height: auto; }
-  .ship-tree { margin: 0.5rem 0 1rem; }
-  .ship-tree svg { display: block; width: 100%; max-width: 100%; height: auto; }
+  .pipeline svg text { font-size: 11px; }
+  .ship-tree { margin: 0.5rem 0 1rem; max-width: 100%; overflow-x: auto; }
+  .ship-tree svg { display: block; max-width: 100%; height: auto; }
   @media (max-width: 600px) {
     .pipeline { margin-bottom: 1rem; }
+    .pipeline svg text { font-size: 10px; }
   }
 
   /* Theme toggle — top-right of the page, both themes. */
