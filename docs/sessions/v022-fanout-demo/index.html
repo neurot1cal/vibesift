@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="vibesift">
+<meta name="robots" content="noindex">
+<title>Demo: v0.2.2 fan-out tree visualization</title>
+<style>
+  :root {
+    color-scheme: dark light;
+
+    /* Accents (theme-stable) */
+    --accent: #facc15;        /* yellow-400 — pinning + hero accent */
+    --accent-deep: #ca8a04;   /* yellow-600 — outlines */
+    --positive: #22c55e;      /* green-500 — done, shipped */
+    --warning: #ca8a04;       /* yellow-600 — pending */
+
+    /* Neutrals (overridden in [data-theme="light"]) */
+    --bg: #09090b;
+    --surface: #0f0f12;
+    --surface-2: #18181b;
+    --border: #27272a;
+    --border-strong: #3f3f46;
+    --text: #fafafa;
+    --text-muted: #d4d4d8;
+    --text-dim: #a1a1aa;
+    --text-faint: #71717a;
+    --text-ghost: #52525b;
+
+    /* Semantic backgrounds */
+    --badge-active-bg: #1e3a8a;
+    --badge-active-fg: #bfdbfe;
+    --badge-shipped-bg: #14532d;
+    --badge-shipped-fg: #bbf7d0;
+
+    --decision-bg: #0a0a0a;
+  }
+  [data-theme="light"] {
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --surface-2: #f4f4f5;
+    --border: #e4e4e7;
+    --border-strong: #d4d4d8;
+    --text: #09090b;
+    --text-muted: #27272a;
+    --text-dim: #52525b;
+    --text-faint: #71717a;
+    --text-ghost: #a1a1aa;
+
+    --badge-active-bg: #dbeafe;
+    --badge-active-fg: #1e3a8a;
+    --badge-shipped-bg: #dcfce7;
+    --badge-shipped-fg: #166534;
+
+    --decision-bg: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 1.5rem 1rem 4rem;
+    max-width: 760px;
+    transition: background 150ms ease, color 150ms ease;
+  }
+  header { border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem; position: relative; }
+  .brand-mark {
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.15em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  h1 { font-size: 1.5rem; margin: 0 0 0.25rem; line-height: 1.2; }
+  h2 { font-size: 1.125rem; margin-top: 2rem; margin-bottom: 0.5rem; color: var(--text); }
+  h3 { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin: 1.25rem 0 0.5rem; }
+  p { margin: 0.5rem 0; color: var(--text-muted); }
+  ul, ol { padding-left: 1.25rem; color: var(--text-muted); }
+  li { margin: 0.25rem 0; }
+  a { color: var(--text); }
+  em { color: var(--text-faint); }
+  code { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.875em; color: var(--text-muted); background: var(--surface-2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+  .meta { color: var(--text-dim); font-size: 0.875rem; }
+  .meta a { color: var(--text-dim); }
+  .meta-line { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-top: 0.5rem; }
+  .badge {
+    display: inline-block;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .badge-active { background: var(--badge-active-bg); color: var(--badge-active-fg); }
+  .badge-shipped { background: var(--badge-shipped-bg); color: var(--badge-shipped-fg); }
+  nav { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .nav-item {
+    flex: 1;
+    text-align: center;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--text-dim);
+    font-size: 0.875rem;
+    min-width: 100px;
+  }
+  .nav-active { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 600; }
+  .nav-done { color: var(--text-faint); }
+  .nav-done::after { content: " ✓"; color: var(--positive); }
+  .phase { margin-bottom: 2rem; padding-top: 0.5rem; }
+  .empty { color: var(--text-ghost); font-style: italic; font-size: 0.875rem; }
+  .pending { color: var(--warning); font-size: 0.875rem; padding: 0.625rem 0.875rem; background: rgba(202,138,4,0.08); border-left: 3px solid var(--warning); border-radius: 0 4px 4px 0; }
+  .problem { font-size: 1.0625rem; line-height: 1.6; }
+  .constraints, .options, .tasks { padding-left: 1.25rem; }
+
+  /* Collapsible records — load-bearing for the .md-overload pitch.
+     Closed by default. Summary line shows first sentence; click to expand. */
+  details.record {
+    margin: 0.125rem 0;
+  }
+  details.record > summary {
+    cursor: pointer;
+    list-style: none;
+    color: var(--text-muted);
+    padding: 0.125rem 0 0.125rem 0.875rem;
+    position: relative;
+    border-radius: 3px;
+    transition: color 120ms;
+  }
+  details.record > summary::-webkit-details-marker { display: none; }
+  details.record > summary::before {
+    content: "›";
+    position: absolute;
+    left: 0;
+    top: 0.0625rem;
+    color: var(--text-faint);
+    font-family: ui-monospace, monospace;
+    font-weight: 600;
+    transition: transform 150ms ease, color 150ms ease;
+    transform-origin: 0.4em 0.5em;
+    display: inline-block;
+  }
+  details.record[open] > summary::before {
+    transform: rotate(90deg);
+    color: var(--accent);
+  }
+  details.record > summary:hover { color: var(--text); }
+  details.record > summary:hover::before { color: var(--accent); }
+  details.record > .record-body {
+    margin-top: 0.375rem;
+    padding: 0.625rem 0.875rem 0.625rem 1rem;
+    background: var(--surface-2);
+    border-left: 2px solid var(--accent-deep);
+    border-radius: 0 4px 4px 0;
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+  .record-text { color: var(--text-muted); }
+  .problem details.record > .record-body { font-size: 1rem; }
+
+  .decision {
+    margin-top: 1.5rem;
+    padding: 0.875rem 1rem;
+    background: var(--decision-bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+  }
+  .decision-label {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    font-weight: 600;
+  }
+  .decision p { margin: 0.375rem 0; color: var(--text); font-size: 1rem; }
+  .decision .rationale { color: var(--text-dim); font-size: 0.9375rem; }
+  .decision-time { font-size: 0.75rem; color: var(--text-ghost); }
+  .tasks { list-style: none; padding-left: 0; }
+  .task-mark { display: inline-block; width: 1.25rem; font-weight: 600; }
+  .task-todo .task-mark { color: var(--text-faint); }
+  .task-done .task-mark { color: var(--positive); }
+  .task-done .task-text { color: var(--text-faint); text-decoration: line-through; }
+  .task-agent {
+    display: inline-block;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", monospace;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.0625rem 0.375rem;
+    margin-right: 0.375rem;
+    vertical-align: 1px;
+  }
+  .diff-link {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.875rem;
+  }
+  .shipped { color: var(--positive); font-weight: 600; margin-top: 1rem; }
+  .log { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+  .log ol { padding-left: 1.5rem; }
+  .log li { margin: 0.5rem 0; font-size: 0.875rem; }
+  .log-phase {
+    display: inline-block;
+    min-width: 4rem;
+    color: var(--text-faint);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .log-text { color: var(--text-muted); }
+  .log-time { display: block; color: var(--text-ghost); font-size: 0.75rem; margin-top: 0.125rem; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--text-ghost); font-size: 0.75rem; text-align: center; }
+  footer a { color: var(--text-faint); }
+
+  /* Pipeline + ship-tree SVG containers. Pipeline scales width:100% so the
+     5-stage strip fills the page on any viewport. CSS font-size overrides
+     the SVG's font-size attribute so labels stay readable when the SVG
+     scales down on mobile (viewBox 500 → ~343px container = 0.69x scale,
+     which would render the inline 10-unit attribute as ~7px without an
+     override). Tree keeps its natural width with overflow-x:auto so it
+     doesn't blow up to fill a wide desktop column. */
+  .pipeline { margin: 0 0 1.25rem; }
+  .pipeline svg { display: block; width: 100%; max-width: 100%; height: auto; }
+  .pipeline svg text { font-size: 11px; }
+  .ship-tree { margin: 0.5rem 0 1rem; max-width: 100%; overflow-x: auto; }
+  .ship-tree svg { display: block; max-width: 100%; height: auto; }
+  @media (max-width: 600px) {
+    .pipeline { margin-bottom: 1rem; }
+    .pipeline svg text { font-size: 10px; }
+  }
+
+  /* Theme toggle — top-right of the page, both themes. */
+  .theme-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font: 0.75rem ui-monospace, SFMono-Regular, monospace;
+    padding: 0.375rem 0.625rem;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--text); }
+</style>
+</head>
+<body>
+<header>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">◐ DARK</button>
+  <div class="brand-mark">vibesift · v022-fanout-demo</div>
+  <h1>Demo: v0.2.2 fan-out tree visualization</h1>
+  <div class="meta-line">
+    <span class="badge badge-active">Shipping</span>
+    <span><a href="https://github.com/neurot1cal/vibesift">github.com/neurot1cal/vibesift</a></span>
+    <span>branch: <code>chore/render-fix-and-demo</code></span>
+    <span class="meta">updated 2026-05-10 14:02 UTC</span>
+  </div>
+</header>
+<div class="pipeline" aria-label="Session lifecycle pipeline"><svg xmlns="http://www.w3.org/2000/svg" class="pipeline" viewBox="0 0 500 32" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Pipeline: current stage Ship"><title>Pipeline: current stage Ship</title><g class="pipeline-stage" data-stage="idea" data-status="completed"><rect x="10" y="4" width="80" height="24" rx="12" ry="12" fill="#22c55e" stroke="#22c55e" stroke-width="1.5"/><text x="50" y="16.5" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="600" text-anchor="middle" dominant-baseline="middle" fill="#09090b">Idea</text></g><g class="pipeline-connector"><line x1="93" y1="16" x2="104" y2="16" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round"/><polygon points="104,13 104,19 109,16" fill="#22c55e"/></g><g class="pipeline-stage" data-stage="scope" data-status="completed"><rect x="110" y="4" width="80" height="24" rx="12" ry="12" fill="#22c55e" stroke="#22c55e" stroke-width="1.5"/><text x="150" y="16.5" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="600" text-anchor="middle" dominant-baseline="middle" fill="#09090b">Scope</text></g><g class="pipeline-connector"><line x1="193" y1="16" x2="204" y2="16" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round"/><polygon points="204,13 204,19 209,16" fill="#22c55e"/></g><g class="pipeline-stage" data-stage="sift" data-status="completed"><rect x="210" y="4" width="80" height="24" rx="12" ry="12" fill="#22c55e" stroke="#22c55e" stroke-width="1.5"/><text x="250" y="16.5" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="600" text-anchor="middle" dominant-baseline="middle" fill="#09090b">Sift</text></g><g class="pipeline-connector"><line x1="293" y1="16" x2="304" y2="16" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round"/><polygon points="304,13 304,19 309,16" fill="#22c55e"/></g><g class="pipeline-stage" data-stage="ship" data-status="current"><rect x="310" y="4" width="80" height="24" rx="12" ry="12" fill="#facc15" stroke="#facc15" stroke-width="1.5"/><text x="350" y="16.5" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="600" text-anchor="middle" dominant-baseline="middle" fill="#09090b">Ship</text></g><g class="pipeline-connector"><line x1="393" y1="16" x2="404" y2="16" stroke="#facc15" stroke-width="1.5" stroke-linecap="round"/><polygon points="404,13 404,19 409,16" fill="#facc15"/></g><g class="pipeline-stage" data-stage="deployed" data-status="pending"><rect x="410" y="4" width="80" height="24" rx="12" ry="12" fill="transparent" stroke="#52525b" stroke-width="1.5"/><text x="450" y="16.5" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="600" text-anchor="middle" dominant-baseline="middle" fill="#a1a1aa">Deployed</text></g></svg></div>
+<nav><a href="#scope" class="nav-item nav-done">Scope</a><a href="#sift" class="nav-item nav-done">Sift</a><a href="#ship" class="nav-item nav-active">Ship</a></nav>
+<main>
+
+    <section id="scope" class="phase">
+      <h2>Scope</h2>
+      <h3>Problem</h3>
+      <div class="problem"><details class="record"><summary>Show what an actually-fanned-out vibesift session looks like.</summary><div class="record-body">Show what an actually-fanned-out vibesift session looks like. flow-visualization shipped with all 8 tasks flat; this session uses --parent and --agent on real planned v0.2.3 work so the tree visualization has structure to render.</div></details></div>
+      <h3>Constraints</h3>
+      <ul class="constraints"><li><span class="record-text">Real v0.2.3 candidate work (template-drift fix); not synthetic make-work</span></li><li><span class="record-text">Tree depth &gt;= 3 levels so the depth-N indent rendering is visible</span></li></ul>
+      <div class="decision">
+         <span class="decision-label">Decision</span>
+         <p>Scope a minimal v0.2.3 planning session with one parent task, two children tagged to worktree agents, and one grandchild — enough to demonstrate the L-shaped connector tree and agent-badge rendering at scale.</p>
+         <span class="decision-time">2026-05-10 14:02 UTC</span>
+       </div>
+    </section>
+
+    <section id="sift" class="phase">
+      <h2>Sift</h2>
+      <h3>Options considered</h3>
+      <ul class="options"><li><span class="record-text">Synthetic demo data (1 root, 3 leaves, no real meaning)</span></li><li><details class="record"><summary>Real v0.2.3 candidate work: &#39;render with template-at-init-time&#39; fix to templa…</summary><div class="record-body">Real v0.2.3 candidate work: &#39;render with template-at-init-time&#39; fix to template-drift bug from v0.2.2 dogfood</div></details></li></ul>
+      <div class="decision">
+         <span class="decision-label">Chose</span>
+         <p>Real v0.2.3 candidate work as the task tree</p>
+         <div class="rationale"><details class="record"><summary>Real candidate work is honest, has natural multi-agent fan-out, and turns the…</summary><div class="record-body">Real candidate work is honest, has natural multi-agent fan-out, and turns the demo into a starting plan for the next release. Synthetic data would render the same tree but be discardable noise in the repo.</div></details></div>
+         <span class="decision-time">2026-05-10 14:02 UTC</span>
+       </div>
+    </section>
+
+    <section id="ship" class="phase">
+      <h2>Ship</h2>
+      <h3>Tasks</h3>
+      <div class="ship-tree"><svg xmlns="http://www.w3.org/2000/svg" class="task-tree" viewBox="0 0 398 104" width="398" height="104" preserveAspectRatio="xMinYMin meet" role="img" aria-label="Implementation tree: 4 tasks across 3 agents, 1 done"><title>Implementation tree: 4 tasks across 3 agents, 1 done</title><path class="tree-connector" d="M 13 12 L 13 36 L 32 36" stroke="#52525b" stroke-width="1" fill="none"/><path class="tree-connector" d="M 13 12 L 13 60 L 32 60" stroke="#52525b" stroke-width="1" fill="none"/><path class="tree-connector" d="M 37 60 L 37 84 L 56 84" stroke="#52525b" stroke-width="1" fill="none"/><circle class="task-status task-status-done" cx="13" cy="12" r="5" fill="#22c55e"/><text class="task-label task-done" x="28" y="12" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#22c55e" text-decoration="line-through">Coordinate: scope shape + acc…</text><rect class="task-agent-badge" x="270" y="5" width="36" height="14" rx="3" ry="3" fill="#facc15"/><text class="task-agent-label" x="288" y="12" text-anchor="middle" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="600" fill="#09090b">main</text><circle class="task-status task-status-todo" cx="37" cy="36" r="4.5" fill="none" stroke="#71717a" stroke-width="1.5"/><text class="task-label" x="52" y="36" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#d4d4d8">Schema: capture template vers…</text><rect class="task-agent-badge" x="294" y="29" width="72" height="14" rx="3" ry="3" fill="#facc15"/><text class="task-agent-label" x="330" y="36" text-anchor="middle" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="600" fill="#09090b">worktree-A</text><circle class="task-status task-status-todo" cx="37" cy="60" r="4.5" fill="none" stroke="#71717a" stroke-width="1.5"/><text class="task-label" x="52" y="60" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#d4d4d8">CLI: thread captured version …</text><rect class="task-agent-badge" x="294" y="53" width="72" height="14" rx="3" ry="3" fill="#facc15"/><text class="task-agent-label" x="330" y="60" text-anchor="middle" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="600" fill="#09090b">worktree-B</text><circle class="task-status task-status-todo" cx="61" cy="84" r="4.5" fill="none" stroke="#71717a" stroke-width="1.5"/><text class="task-label" x="76" y="84" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#d4d4d8">Tests: integration covering v…</text><rect class="task-agent-badge" x="318" y="77" width="72" height="14" rx="3" ry="3" fill="#facc15"/><text class="task-agent-label" x="354" y="84" text-anchor="middle" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="600" fill="#09090b">worktree-B</text></svg></div>
+      <ul class="tasks">
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          <span class="task-agent">main</span>
+          <span class="task-text">Coordinate: scope shape + acceptance test for template-drift fix</span>
+        </li>
+      
+        <li class="task-todo">
+          <span class="task-mark">·</span>
+          <span class="task-agent">worktree-A</span>
+          <span class="task-text">Schema: capture template version at vibesift init in state.js</span>
+        </li>
+      
+        <li class="task-todo">
+          <span class="task-mark">·</span>
+          <span class="task-agent">worktree-B</span>
+          <span class="task-text">CLI: thread captured version through to render, override via --template-version flag</span>
+        </li>
+      
+        <li class="task-todo">
+          <span class="task-mark">·</span>
+          <span class="task-agent">worktree-B</span>
+          <span class="task-text">Tests: integration covering version-aware render across template upgrades</span>
+        </li>
+      </ul>
+      <p><a class="diff-link" href="https://github.com/neurot1cal/vibesift/compare/main...chore/render-fix-and-demo">View diff →</a></p>
+      
+    </section>
+
+    <section class="log">
+      <h2>Decision log</h2>
+      <ol>
+        
+          <li>
+            <span class="log-phase">Scope</span>
+            <span class="log-text">Scope a minimal v0.2.3 planning session with one parent task, two children tagged to worktree agents, and one grandchild — enough to demonstrate the L-shaped connector tree and agent-badge rendering at scale.</span>
+            <span class="log-time">2026-05-10 14:02 UTC</span>
+          </li>
+        
+          <li>
+            <span class="log-phase">Sift</span>
+            <span class="log-text">Real v0.2.3 candidate work as the task tree</span>
+            <span class="log-time">2026-05-10 14:02 UTC</span>
+          </li>
+        
+      </ol>
+    </section>
+</main>
+<footer>generated by <a href="https://github.com/vibesift/vibesift">vibesift</a> · this page is read-only · the terminal drives the flow</footer>
+<script type="application/json" id="vibesift-state">
+{
+  "schemaVersion": 1,
+  "slug": "v022-fanout-demo",
+  "title": "Demo: v0.2.2 fan-out tree visualization",
+  "branch": "chore/render-fix-and-demo",
+  "repo": "https://github.com/neurot1cal/vibesift",
+  "phase": "ship",
+  "createdAt": 1778421720970,
+  "updatedAt": 1778421729461,
+  "scope": {
+    "problem": "Show what an actually-fanned-out vibesift session looks like. flow-visualization shipped with all 8 tasks flat; this session uses --parent and --agent on real planned v0.2.3 work so the tree visualization has structure to render.",
+    "constraints": [
+      "Real v0.2.3 candidate work (template-drift fix); not synthetic make-work",
+      "Tree depth \u003e= 3 levels so the depth-N indent rendering is visible"
+    ],
+    "decision": "Scope a minimal v0.2.3 planning session with one parent task, two children tagged to worktree agents, and one grandchild — enough to demonstrate the L-shaped connector tree and agent-badge rendering at scale.",
+    "decidedAt": 1778421721327
+  },
+  "sift": {
+    "options": [
+      {
+        "text": "Synthetic demo data (1 root, 3 leaves, no real meaning)",
+        "addedAt": 1778421721570
+      },
+      {
+        "text": "Real v0.2.3 candidate work: 'render with template-at-init-time' fix to template-drift bug from v0.2.2 dogfood",
+        "addedAt": 1778421721692
+      }
+    ],
+    "decision": "Real v0.2.3 candidate work as the task tree",
+    "rationale": "Real candidate work is honest, has natural multi-agent fan-out, and turns the demo into a starting plan for the next release. Synthetic data would render the same tree but be discardable noise in the repo.",
+    "decidedAt": 1778421721930
+  },
+  "ship": {
+    "tasks": [
+      {
+        "id": 1,
+        "text": "Coordinate: scope shape + acceptance test for template-drift fix",
+        "done": true,
+        "agent": "main"
+      },
+      {
+        "id": 2,
+        "text": "Schema: capture template version at vibesift init in state.js",
+        "done": false,
+        "agent": "worktree-A",
+        "parentId": 1
+      },
+      {
+        "id": 3,
+        "text": "CLI: thread captured version through to render, override via --template-version flag",
+        "done": false,
+        "agent": "worktree-B",
+        "parentId": 1
+      },
+      {
+        "id": 4,
+        "text": "Tests: integration covering version-aware render across template upgrades",
+        "done": false,
+        "agent": "worktree-B",
+        "parentId": 3
+      }
+    ],
+    "diffUrl": "https://github.com/neurot1cal/vibesift/compare/main...chore/render-fix-and-demo",
+    "shippedAt": null
+  },
+  "decisions": [
+    {
+      "phase": "scope",
+      "text": "Scope a minimal v0.2.3 planning session with one parent task, two children tagged to worktree agents, and one grandchild — enough to demonstrate the L-shaped connector tree and agent-badge rendering at scale.",
+      "decidedAt": 1778421721327
+    },
+    {
+      "phase": "sift",
+      "text": "Real v0.2.3 candidate work as the task tree",
+      "decidedAt": 1778421721930
+    }
+  ],
+  "deployedAt": null
+}
+</script>
+<script>
+(function(){
+  var KEY='vibesift:theme';
+  var root=document.documentElement;
+  var btn=document.getElementById('theme-toggle');
+  var saved=null;
+  try { saved = localStorage.getItem(KEY); } catch(e) {}
+  var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  var theme = saved || (prefersLight ? 'light' : 'dark');
+  apply(theme);
+  if (btn) btn.addEventListener('click', function(){
+    var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    apply(next);
+    try { localStorage.setItem(KEY, next); } catch(e) {}
+  });
+  function apply(t){
+    root.setAttribute('data-theme', t);
+    if (btn) btn.textContent = t === 'light' ? '◐ DARK' : '◑ LIGHT';
+  }
+})();
+</script>
+</body>
+</html>
