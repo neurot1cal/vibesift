@@ -296,7 +296,12 @@
       <h2>Sift</h2>
       <h3>Options considered</h3>
       <ul class="options"><li><span class="record-text">Synthetic demo data (1 root, 3 leaves, no real meaning)</span></li><li><details class="record"><summary>Real v0.2.3 candidate work: &#39;render with template-at-init-time&#39; fix to templa…</summary><div class="record-body">Real v0.2.3 candidate work: &#39;render with template-at-init-time&#39; fix to template-drift bug from v0.2.2 dogfood</div></details></li></ul>
-      <p class="pending">No selection yet.</p>
+      <div class="decision">
+         <span class="decision-label">Chose</span>
+         <p>Real v0.2.3 candidate work as the task tree</p>
+         <div class="rationale"><details class="record"><summary>Real candidate work is honest, has natural multi-agent fan-out, and turns the…</summary><div class="record-body">Real candidate work is honest, has natural multi-agent fan-out, and turns the demo into a starting plan for the next release. Synthetic data would render the same tree but be discardable noise in the repo.</div></details></div>
+         <span class="decision-time">2026-05-10 14:02 UTC</span>
+       </div>
     </section>
 
     <section id="ship" class="phase">
@@ -318,6 +323,12 @@
             <span class="log-time">2026-05-10 14:02 UTC</span>
           </li>
         
+          <li>
+            <span class="log-phase">Sift</span>
+            <span class="log-text">Real v0.2.3 candidate work as the task tree</span>
+            <span class="log-time">2026-05-10 14:02 UTC</span>
+          </li>
+        
       </ol>
     </section>
 </main>
@@ -331,7 +342,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "sift",
   "createdAt": 1778421720970,
-  "updatedAt": 1778421721812,
+  "updatedAt": 1778421721930,
   "scope": {
     "problem": "Show what an actually-fanned-out vibesift session looks like. flow-visualization shipped with all 8 tasks flat; this session uses --parent and --agent on real planned v0.2.3 work so the tree visualization has structure to render.",
     "constraints": [
@@ -352,9 +363,9 @@
         "addedAt": 1778421721692
       }
     ],
-    "decision": null,
+    "decision": "Real v0.2.3 candidate work as the task tree",
     "rationale": "Real candidate work is honest, has natural multi-agent fan-out, and turns the demo into a starting plan for the next release. Synthetic data would render the same tree but be discardable noise in the repo.",
-    "decidedAt": null
+    "decidedAt": 1778421721930
   },
   "ship": {
     "tasks": [],
@@ -366,6 +377,11 @@
       "phase": "scope",
       "text": "Scope a minimal v0.2.3 planning session with one parent task, two children tagged to worktree agents, and one grandchild — enough to demonstrate the L-shaped connector tree and agent-badge rendering at scale.",
       "decidedAt": 1778421721327
+    },
+    {
+      "phase": "sift",
+      "text": "Real v0.2.3 candidate work as the task tree",
+      "decidedAt": 1778421721930
     }
   ],
   "deployedAt": null
