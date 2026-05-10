@@ -95,3 +95,121 @@ test('--no-commit on init also skips the commit', () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// --parent <id> wires the parent linkage from CLI through to addTask. The
+// state.js side is already covered by tests/state.test.js; this test only
+// verifies the flag parsing + composition with --agent and that the
+// resulting parentId is round-tripped into the rendered HTML.
+test('ship task add --parent wires the parentId through to state', () => {
+  const { dir, env } = makeRepo();
+  try {
+    mkdirSync(join(dir, 'docs', 'sessions'), { recursive: true });
+
+    const initR = runCli(dir, env, ['init', 'demo', '--title', 'Demo', '--no-commit']);
+    assert.equal(initR.status, 0, `init failed: ${initR.stderr}`);
+
+    // First task — no parent. Becomes id 1.
+    const t1 = runCli(dir, env, ['ship', 'demo', 'task', 'add', 'parent task', '--no-commit']);
+    assert.equal(t1.status, 0, `task 1 failed: ${t1.stderr}`);
+
+    // Second task — child of #1, with --agent composed alongside --parent.
+    // Both flags should compose; order shouldn't matter.
+    const t2 = runCli(dir, env, [
+      'ship', 'demo', 'task', 'add', 'child task',
+      '--parent', '1', '--agent', 'worker', '--no-commit',
+    ]);
+    assert.equal(t2.status, 0, `task 2 failed: ${t2.stderr}`);
+
+    const htmlPath = join(dir, 'docs', 'sessions', 'demo', 'index.html');
+    const html = readFileSync(htmlPath, 'utf8');
+    // The state JSON block carries parentId — proves the flag survived
+    // CLI parsing → addTask → render → parse pipeline.
+    assert.match(html, /"parentId":\s*1/, 'rendered state must include parentId:1');
+    assert.match(html, /"agent":\s*"worker"/, 'rendered state must include agent:worker');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('ship task add --parent errors when parent id does not exist', () => {
+  const { dir, env } = makeRepo();
+  try {
+    mkdirSync(join(dir, 'docs', 'sessions'), { recursive: true });
+
+    const initR = runCli(dir, env, ['init', 'demo', '--title', 'Demo', '--no-commit']);
+    assert.equal(initR.status, 0, `init failed: ${initR.stderr}`);
+
+    // Add a child task pointing at a non-existent parent — must fail
+    // non-zero with a recognisable error and not write to the HTML.
+    const r = runCli(dir, env, [
+      'ship', 'demo', 'task', 'add', 'orphan',
+      '--parent', '99', '--no-commit',
+    ]);
+    assert.notEqual(r.status, 0, `expected non-zero exit; stderr: ${r.stderr}`);
+    assert.match(r.stderr, /parent task 99 not found/, `stderr should report missing parent; got: ${r.stderr}`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// `vibesift deploy <slug>` stamps state.deployedAt and is idempotent.
+// We test both the first-time stamp AND the re-run no-op; --no-commit
+// keeps the test off git so the assertion is purely about the file +
+// stderr.
+test('deploy --no-commit stamps deployedAt and is idempotent on second run', () => {
+  const { dir, env } = makeRepo();
+  try {
+    mkdirSync(join(dir, 'docs', 'sessions'), { recursive: true });
+
+    const initR = runCli(dir, env, ['init', 'demo', '--title', 'Demo', '--no-commit']);
+    assert.equal(initR.status, 0, `init failed: ${initR.stderr}`);
+
+    // First deploy: stamps deployedAt.
+    const d1 = runCli(dir, env, ['deploy', 'demo', '--no-commit']);
+    assert.equal(d1.status, 0, `first deploy failed: ${d1.stderr}`);
+
+    const htmlPath = join(dir, 'docs', 'sessions', 'demo', 'index.html');
+    let html = readFileSync(htmlPath, 'utf8');
+    // deployedAt must now be a number (not null) in the embedded JSON.
+    const m1 = html.match(/"deployedAt":\s*(\d+)/);
+    assert.ok(m1, `deployedAt must be a numeric timestamp; got HTML state: ${html.slice(html.indexOf('"deployedAt"'), html.indexOf('"deployedAt"') + 60)}`);
+    const firstStamp = Number(m1[1]);
+
+    // Second deploy: no-op. Idempotent — stderr reports "already deployed",
+    // exit code stays 0, and the timestamp does NOT change.
+    const d2 = runCli(dir, env, ['deploy', 'demo', '--no-commit']);
+    assert.equal(d2.status, 0, `second deploy failed: ${d2.stderr}`);
+    assert.match(d2.stderr, /already deployed at/, `idempotent run should report existing date; got: ${d2.stderr}`);
+
+    html = readFileSync(htmlPath, 'utf8');
+    const m2 = html.match(/"deployedAt":\s*(\d+)/);
+    assert.ok(m2, 'deployedAt still present after second deploy');
+    assert.equal(Number(m2[1]), firstStamp, 'second deploy must NOT bump the timestamp');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('deploy without --no-commit creates exactly one commit', () => {
+  const { dir, env } = makeRepo();
+  try {
+    mkdirSync(join(dir, 'docs', 'sessions'), { recursive: true });
+
+    // Init WITH commit so we have a baseline.
+    const initR = runCli(dir, env, ['init', 'demo', '--title', 'Demo']);
+    assert.equal(initR.status, 0, `init failed: ${initR.stderr}`);
+
+    const before = spawnSync('git', ['-C', dir, 'log', '--oneline'], { encoding: 'utf8' });
+    const commitsBefore = before.stdout.trim().split('\n').length;
+
+    const d = runCli(dir, env, ['deploy', 'demo']);
+    assert.equal(d.status, 0, `deploy failed: ${d.stderr}`);
+
+    const after = spawnSync('git', ['-C', dir, 'log', '--oneline'], { encoding: 'utf8' });
+    const commitsAfter = after.stdout.trim().split('\n').length;
+    assert.equal(commitsAfter, commitsBefore + 1, `deploy should add exactly one commit; before=${commitsBefore} after=${commitsAfter}`);
+    assert.match(after.stdout, /vibesift: deployed demo/, `commit message should be 'vibesift: deployed demo'; got: ${after.stdout}`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
