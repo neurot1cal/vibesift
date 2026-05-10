@@ -213,3 +213,40 @@ test('deploy without --no-commit creates exactly one commit', () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('end-to-end: parent + child task + deploy renders pipeline + tree SVG with agent badges', () => {
+  const { dir, env } = makeRepo();
+  try {
+    mkdirSync(join(dir, 'docs', 'sessions'), { recursive: true });
+
+    // Drive the full new flow: init → advance to ship → parent task with
+    // agent → child task with --parent + --agent → deploy. Then read the
+    // rendered HTML and assert the pipeline shows Deployed as current and
+    // the tree SVG carries both task names and both agent badges.
+    const calls = [
+      ['init', 'e2e', '--title', 'E2E flow'],
+      ['advance', 'e2e'],
+      ['advance', 'e2e'],
+      ['ship', 'e2e', 'task', 'add', 'parent task', '--agent', 'main'],
+      ['ship', 'e2e', 'task', 'add', 'child task', '--parent', '1', '--agent', 'worktree-A'],
+      ['deploy', 'e2e'],
+    ];
+    for (const args of calls) {
+      const r = runCli(dir, env, args);
+      assert.equal(r.status, 0, `${args.join(' ')} failed: ${r.stderr}`);
+    }
+
+    const html = readFileSync(join(dir, 'docs', 'sessions', 'e2e', 'index.html'), 'utf8');
+
+    // Pipeline marks Deployed as current after the deploy command.
+    assert.match(html, /data-stage="deployed"[^>]*data-status="current"/);
+    // Tree SVG is present with both task names and agent badges.
+    assert.match(html, /class="ship-tree"/);
+    assert.match(html, />parent task</);
+    assert.match(html, />child task</);
+    assert.match(html, />main</);
+    assert.match(html, />worktree-A</);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
