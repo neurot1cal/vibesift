@@ -307,8 +307,14 @@
     <section id="ship" class="phase">
       <h2>Ship</h2>
       <h3>Tasks</h3>
-      
-      <p class="empty">No tasks yet.</p>
+      <div class="ship-tree"><svg xmlns="http://www.w3.org/2000/svg" class="task-tree" viewBox="0 0 314 32" width="314" height="32" preserveAspectRatio="xMinYMin meet" role="img" aria-label="Implementation tree: 1 task across 1 agent, 0 done"><title>Implementation tree: 1 task across 1 agent, 0 done</title><circle class="task-status task-status-todo" cx="13" cy="12" r="4.5" fill="none" stroke="#71717a" stroke-width="1.5"/><text class="task-label" x="28" y="12" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#d4d4d8">Coordinate: scope shape + acc…</text><rect class="task-agent-badge" x="270" y="5" width="36" height="14" rx="3" ry="3" fill="#facc15"/><text class="task-agent-label" x="288" y="12" text-anchor="middle" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="600" fill="#09090b">main</text></svg></div>
+      <ul class="tasks">
+        <li class="task-todo">
+          <span class="task-mark">·</span>
+          <span class="task-agent">main</span>
+          <span class="task-text">Coordinate: scope shape + acceptance test for template-drift fix</span>
+        </li>
+      </ul>
       <p><a class="diff-link" href="https://github.com/neurot1cal/vibesift/compare/main...chore/render-fix-and-demo">View diff →</a></p>
       
     </section>
@@ -342,7 +348,7 @@
   "repo": "https://github.com/neurot1cal/vibesift",
   "phase": "ship",
   "createdAt": 1778421720970,
-  "updatedAt": 1778421722048,
+  "updatedAt": 1778421728993,
   "scope": {
     "problem": "Show what an actually-fanned-out vibesift session looks like. flow-visualization shipped with all 8 tasks flat; this session uses --parent and --agent on real planned v0.2.3 work so the tree visualization has structure to render.",
     "constraints": [
@@ -368,7 +374,14 @@
     "decidedAt": 1778421721930
   },
   "ship": {
-    "tasks": [],
+    "tasks": [
+      {
+        "id": 1,
+        "text": "Coordinate: scope shape + acceptance test for template-drift fix",
+        "done": false,
+        "agent": "main"
+      }
+    ],
     "diffUrl": "https://github.com/neurot1cal/vibesift/compare/main...chore/render-fix-and-demo",
     "shippedAt": null
   },
