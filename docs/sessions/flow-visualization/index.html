@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="vibesift">
+<meta name="robots" content="noindex">
+<title>Visual flow diagrams: top-level pipeline + agent fan-out tree</title>
+<style>
+  :root {
+    color-scheme: dark light;
+
+    /* Accents (theme-stable) */
+    --accent: #facc15;        /* yellow-400 — pinning + hero accent */
+    --accent-deep: #ca8a04;   /* yellow-600 — outlines */
+    --positive: #22c55e;      /* green-500 — done, shipped */
+    --warning: #ca8a04;       /* yellow-600 — pending */
+
+    /* Neutrals (overridden in [data-theme="light"]) */
+    --bg: #09090b;
+    --surface: #0f0f12;
+    --surface-2: #18181b;
+    --border: #27272a;
+    --border-strong: #3f3f46;
+    --text: #fafafa;
+    --text-muted: #d4d4d8;
+    --text-dim: #a1a1aa;
+    --text-faint: #71717a;
+    --text-ghost: #52525b;
+
+    /* Semantic backgrounds */
+    --badge-active-bg: #1e3a8a;
+    --badge-active-fg: #bfdbfe;
+    --badge-shipped-bg: #14532d;
+    --badge-shipped-fg: #bbf7d0;
+
+    --decision-bg: #0a0a0a;
+  }
+  [data-theme="light"] {
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --surface-2: #f4f4f5;
+    --border: #e4e4e7;
+    --border-strong: #d4d4d8;
+    --text: #09090b;
+    --text-muted: #27272a;
+    --text-dim: #52525b;
+    --text-faint: #71717a;
+    --text-ghost: #a1a1aa;
+
+    --badge-active-bg: #dbeafe;
+    --badge-active-fg: #1e3a8a;
+    --badge-shipped-bg: #dcfce7;
+    --badge-shipped-fg: #166534;
+
+    --decision-bg: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 1.5rem 1rem 4rem;
+    max-width: 760px;
+    transition: background 150ms ease, color 150ms ease;
+  }
+  header { border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem; position: relative; }
+  .brand-mark {
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.15em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  h1 { font-size: 1.5rem; margin: 0 0 0.25rem; line-height: 1.2; }
+  h2 { font-size: 1.125rem; margin-top: 2rem; margin-bottom: 0.5rem; color: var(--text); }
+  h3 { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin: 1.25rem 0 0.5rem; }
+  p { margin: 0.5rem 0; color: var(--text-muted); }
+  ul, ol { padding-left: 1.25rem; color: var(--text-muted); }
+  li { margin: 0.25rem 0; }
+  a { color: var(--text); }
+  em { color: var(--text-faint); }
+  code { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.875em; color: var(--text-muted); background: var(--surface-2); padding: 0.125rem 0.375rem; border-radius: 3px; }
+  .meta { color: var(--text-dim); font-size: 0.875rem; }
+  .meta a { color: var(--text-dim); }
+  .meta-line { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-top: 0.5rem; }
+  .badge {
+    display: inline-block;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .badge-active { background: var(--badge-active-bg); color: var(--badge-active-fg); }
+  .badge-shipped { background: var(--badge-shipped-bg); color: var(--badge-shipped-fg); }
+  nav { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .nav-item {
+    flex: 1;
+    text-align: center;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--text-dim);
+    font-size: 0.875rem;
+    min-width: 100px;
+  }
+  .nav-active { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 600; }
+  .nav-done { color: var(--text-faint); }
+  .nav-done::after { content: " ✓"; color: var(--positive); }
+  .phase { margin-bottom: 2rem; padding-top: 0.5rem; }
+  .empty { color: var(--text-ghost); font-style: italic; font-size: 0.875rem; }
+  .pending { color: var(--warning); font-size: 0.875rem; padding: 0.625rem 0.875rem; background: rgba(202,138,4,0.08); border-left: 3px solid var(--warning); border-radius: 0 4px 4px 0; }
+  .problem { font-size: 1.0625rem; line-height: 1.6; }
+  .constraints, .options, .tasks { padding-left: 1.25rem; }
+
+  /* Collapsible records — load-bearing for the .md-overload pitch.
+     Closed by default. Summary line shows first sentence; click to expand. */
+  details.record {
+    margin: 0.125rem 0;
+  }
+  details.record > summary {
+    cursor: pointer;
+    list-style: none;
+    color: var(--text-muted);
+    padding: 0.125rem 0 0.125rem 0.875rem;
+    position: relative;
+    border-radius: 3px;
+    transition: color 120ms;
+  }
+  details.record > summary::-webkit-details-marker { display: none; }
+  details.record > summary::before {
+    content: "›";
+    position: absolute;
+    left: 0;
+    top: 0.0625rem;
+    color: var(--text-faint);
+    font-family: ui-monospace, monospace;
+    font-weight: 600;
+    transition: transform 150ms ease, color 150ms ease;
+    transform-origin: 0.4em 0.5em;
+    display: inline-block;
+  }
+  details.record[open] > summary::before {
+    transform: rotate(90deg);
+    color: var(--accent);
+  }
+  details.record > summary:hover { color: var(--text); }
+  details.record > summary:hover::before { color: var(--accent); }
+  details.record > .record-body {
+    margin-top: 0.375rem;
+    padding: 0.625rem 0.875rem 0.625rem 1rem;
+    background: var(--surface-2);
+    border-left: 2px solid var(--accent-deep);
+    border-radius: 0 4px 4px 0;
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+  .record-text { color: var(--text-muted); }
+  .problem details.record > .record-body { font-size: 1rem; }
+
+  .decision {
+    margin-top: 1.5rem;
+    padding: 0.875rem 1rem;
+    background: var(--decision-bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+  }
+  .decision-label {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    font-weight: 600;
+  }
+  .decision p { margin: 0.375rem 0; color: var(--text); font-size: 1rem; }
+  .decision .rationale { color: var(--text-dim); font-size: 0.9375rem; }
+  .decision-time { font-size: 0.75rem; color: var(--text-ghost); }
+  .tasks { list-style: none; padding-left: 0; }
+  .task-mark { display: inline-block; width: 1.25rem; font-weight: 600; }
+  .task-todo .task-mark { color: var(--text-faint); }
+  .task-done .task-mark { color: var(--positive); }
+  .task-done .task-text { color: var(--text-faint); text-decoration: line-through; }
+  .task-agent {
+    display: inline-block;
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", monospace;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.0625rem 0.375rem;
+    margin-right: 0.375rem;
+    vertical-align: 1px;
+  }
+  .diff-link {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.875rem;
+  }
+  .shipped { color: var(--positive); font-weight: 600; margin-top: 1rem; }
+  .log { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+  .log ol { padding-left: 1.5rem; }
+  .log li { margin: 0.5rem 0; font-size: 0.875rem; }
+  .log-phase {
+    display: inline-block;
+    min-width: 4rem;
+    color: var(--text-faint);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .log-text { color: var(--text-muted); }
+  .log-time { display: block; color: var(--text-ghost); font-size: 0.75rem; margin-top: 0.125rem; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--text-ghost); font-size: 0.75rem; text-align: center; }
+  footer a { color: var(--text-faint); }
+
+  /* Theme toggle — top-right of the page, both themes. */
+  .theme-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font: 0.75rem ui-monospace, SFMono-Regular, monospace;
+    padding: 0.375rem 0.625rem;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--text); }
+</style>
+</head>
+<body>
+<header>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">◐ DARK</button>
+  <div class="brand-mark">vibesift · flow-visualization</div>
+  <h1>Visual flow diagrams: top-level pipeline + agent fan-out tree</h1>
+  <div class="meta-line">
+    <span class="badge badge-shipped">Shipped</span>
+    <span><a href="https://github.com/neurot1cal/vibesift">github.com/neurot1cal/vibesift</a></span>
+    <span>branch: <code>main</code></span>
+    <span class="meta">updated 2026-05-10 02:34 UTC</span>
+  </div>
+</header>
+<nav><a href="#scope" class="nav-item nav-done">Scope</a><a href="#sift" class="nav-item nav-done">Sift</a><a href="#ship" class="nav-item nav-active">Ship</a></nav>
+<main>
+
+    <section id="scope" class="phase">
+      <h2>Scope</h2>
+      <h3>Problem</h3>
+      <div class="problem"><details class="record"><summary>Sessions need a top-level ideation-to-production flow graphic and a tree view…</summary><div class="record-body">Sessions need a top-level ideation-to-production flow graphic and a tree view of the implementation phase, so reviewers can see parallel agent fan-out and overall progress at a glance instead of reading prose.</div></details></div>
+      <h3>Constraints</h3>
+      <ul class="constraints"><li><details class="record"><summary>CLI gains two additive commands: &#39;ship subtask add &lt;parent_id&gt; ...&#39; and a &#39;--…</summary><div class="record-body">CLI gains two additive commands: &#39;ship subtask add &lt;parent_id&gt; ...&#39; and a &#39;--agent &lt;name&gt;&#39; flag on &#39;ship task add&#39;. Both fields default to undefined; existing v0.2.x sessions render unchanged.</div></details></li><li><details class="record"><summary>Diagrams render as inline SVG generated by the CLI.</summary><div class="record-body">Diagrams render as inline SVG generated by the CLI. No JS, no runtime libraries (Mermaid, D3) in HTML output. Zero-runtime guarantee preserved.</div></details></li><li><details class="record"><summary>Top-level pipeline graphic shows 5 stages (Idea -&gt; Scope -&gt; Sift -&gt; Ship -&gt; D…</summary><div class="record-body">Top-level pipeline graphic shows 5 stages (Idea -&gt; Scope -&gt; Sift -&gt; Ship -&gt; Deployed) with current stage highlighted.</div></details></li><li><details class="record"><summary>Pipeline &#39;Deployed&#39; marker requires a new additive &#39;vibesift deploy &lt;slug&gt;&#39; c…</summary><div class="record-body">Pipeline &#39;Deployed&#39; marker requires a new additive &#39;vibesift deploy &lt;slug&gt;&#39; command (sets deployedAt timestamp; does not advance phase).</div></details></li><li><details class="record"><summary>Implementation tree view renders as inline SVG: parent tasks, subtasks indent…</summary><div class="record-body">Implementation tree view renders as inline SVG: parent tasks, subtasks indented, agent labels inline. Must be readable at 375px viewport (mobile).</div></details></li><li><details class="record"><summary>Target v0.2.2 release.</summary><div class="record-body">Target v0.2.2 release. Additive only, backwards-compatible with existing sessions.</div></details></li></ul>
+      <div class="decision">
+         <span class="decision-label">Decision</span>
+         <p>Ship in v0.2.2 as additive CLI changes only: &#39;ship subtask add&#39;, &#39;ship task add --agent&#39;, and &#39;deploy&#39; commands, plus CLI-generated inline SVG for a 5-stage pipeline header and an indented implementation tree. Zero-runtime HTML preserved; existing v0.2.x sessions render unchanged.</p>
+         <span class="decision-time">2026-05-10 02:05 UTC</span>
+       </div>
+    </section>
+
+    <section id="sift" class="phase">
+      <h2>Sift</h2>
+      <h3>Options considered</h3>
+      <ul class="options"><li><details class="record"><summary>Pipeline orientation: horizontal SVG pill-bar with arrows between 5 stages (l…</summary><div class="record-body">Pipeline orientation: horizontal SVG pill-bar with arrows between 5 stages (looks &#39;pipeline-y&#39;; mobile at 375px is tight - &#39;Deployed&#39; label may need abbreviation or smaller font)</div></details></li><li><details class="record"><summary>Pipeline orientation: vertical SVG stack of 5 stages (mobile-native; less rec…</summary><div class="record-body">Pipeline orientation: vertical SVG stack of 5 stages (mobile-native; less recognizably a &#39;pipeline&#39;)</div></details></li><li><details class="record"><summary>Tree style: inline SVG with horizontal indented boxes + L-shaped connectors (…</summary><div class="record-body">Tree style: inline SVG with horizontal indented boxes + L-shaped connectors (file-explorer feel, naturally narrow)</div></details></li><li><details class="record"><summary>Tree style: inline SVG top-down org-chart (visually impressive; needs horizon…</summary><div class="record-body">Tree style: inline SVG top-down org-chart (visually impressive; needs horizontal scroll on narrow screens)</div></details></li><li><details class="record"><summary>Schema: add &#39;parent_id&#39; field on flat task array (simple to render, easy to q…</summary><div class="record-body">Schema: add &#39;parent_id&#39; field on flat task array (simple to render, easy to query)</div></details></li><li><details class="record"><summary>Schema: nested &#39;subtasks&#39; array on each task (preserves hierarchy structurall…</summary><div class="record-body">Schema: nested &#39;subtasks&#39; array on each task (preserves hierarchy structurally, requires recursion)</div></details></li></ul>
+      <div class="decision">
+         <span class="decision-label">Chose</span>
+         <p>Pipeline = horizontal SVG pill-bar with media-query font scale for mobile. Tree = inline SVG with indented boxes and L-shaped connectors. Schema = optional &#39;parent_id&#39; field on flat tasks array (with optional &#39;agent&#39; field per task).</p>
+         <div class="rationale"><details class="record"><summary>Horizontal pipeline preserves left-to-right time metaphor that signals &#39;flow&#39;…</summary><div class="record-body">Horizontal pipeline preserves left-to-right time metaphor that signals &#39;flow&#39; at a glance; 5 pills + arrows fit at 375px with a 10px label font. Indented-boxes tree scales to any depth without horizontal overflow on mobile and uses the file-explorer mental model (familiar to technical readers). parent_id on flat tasks adds one optional field rather than restructuring; preserves existing iteration and matches vibesift&#39;s flat-typed-records state pattern.</div></details></div>
+         <span class="decision-time">2026-05-10 02:07 UTC</span>
+       </div>
+    </section>
+
+    <section id="ship" class="phase">
+      <h2>Ship</h2>
+      <h3>Tasks</h3>
+      <ul class="tasks">
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          
+          <span class="task-text">Schema: add optional parent_id and agent fields to task records; migrate existing sessions safely (no-op if absent)</span>
+        </li>
+      
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          
+          <span class="task-text">CLI: add &#39;ship subtask add &lt;parent_id&gt; ...&#39;, &#39;--agent&#39; flag on &#39;ship task add&#39;, and &#39;deploy &lt;slug&gt;&#39; commands</span>
+        </li>
+      
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          
+          <span class="task-text">SVG pipeline generator: 5-stage horizontal pill-bar with current-stage highlight + arrows</span>
+        </li>
+      
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          
+          <span class="task-text">SVG tree generator: indented boxes with L-shaped connectors; renders task-&gt;subtask hierarchy + agent labels</span>
+        </li>
+      
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          
+          <span class="task-text">HTML template: wire pipeline SVG above session title; wire tree SVG into ship phase block</span>
+        </li>
+      
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          
+          <span class="task-text">CSS: responsive font-size scale on pipeline labels for &lt;600px viewport (inline &lt;style&gt;, no media-query JS)</span>
+        </li>
+      
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          
+          <span class="task-text">Tests: schema migration; new CLI commands; SVG output snapshots for known states</span>
+        </li>
+      
+        <li class="task-done">
+          <span class="task-mark">✓</span>
+          
+          <span class="task-text">Release: bump 0.2.1-&gt;0.2.2, CHANGELOG, README + SKILL.md additions, PR, tag, npm publish</span>
+        </li>
+      </ul>
+      
+      <p class="shipped">Shipped 2026-05-10 02:34 UTC.</p>
+    </section>
+
+    <section class="log">
+      <h2>Decision log</h2>
+      <ol>
+        
+          <li>
+            <span class="log-phase">Scope</span>
+            <span class="log-text">Ship in v0.2.2 as additive CLI changes only: &#39;ship subtask add&#39;, &#39;ship task add --agent&#39;, and &#39;deploy&#39; commands, plus CLI-generated inline SVG for a 5-stage pipeline header and an indented implementation tree. Zero-runtime HTML preserved; existing v0.2.x sessions render unchanged.</span>
+            <span class="log-time">2026-05-10 02:05 UTC</span>
+          </li>
+        
+          <li>
+            <span class="log-phase">Sift</span>
+            <span class="log-text">Pipeline = horizontal SVG pill-bar with media-query font scale for mobile. Tree = inline SVG with indented boxes and L-shaped connectors. Schema = optional &#39;parent_id&#39; field on flat tasks array (with optional &#39;agent&#39; field per task).</span>
+            <span class="log-time">2026-05-10 02:07 UTC</span>
+          </li>
+        
+          <li>
+            <span class="log-phase">Ship</span>
+            <span class="log-text">v0.2.2 ready for review on PR #24. Tag + npm publish gated on owner approval — all build, test, and docs work landed; CI must go green before merge.</span>
+            <span class="log-time">2026-05-10 02:34 UTC</span>
+          </li>
+        
+      </ol>
+    </section>
+</main>
+<footer>generated by <a href="https://github.com/vibesift/vibesift">vibesift</a> · this page is read-only · the terminal drives the flow</footer>
+<script type="application/json" id="vibesift-state">
+{
+  "schemaVersion": 1,
+  "slug": "flow-visualization",
+  "title": "Visual flow diagrams: top-level pipeline + agent fan-out tree",
+  "branch": "main",
+  "repo": "https://github.com/neurot1cal/vibesift",
+  "phase": "ship",
+  "createdAt": 1778377559276,
+  "updatedAt": 1778380485504,
+  "scope": {
+    "problem": "Sessions need a top-level ideation-to-production flow graphic and a tree view of the implementation phase, so reviewers can see parallel agent fan-out and overall progress at a glance instead of reading prose.",
+    "constraints": [
+      "CLI gains two additive commands: 'ship subtask add \u003cparent_id\u003e ...' and a '--agent \u003cname\u003e' flag on 'ship task add'. Both fields default to undefined; existing v0.2.x sessions render unchanged.",
+      "Diagrams render as inline SVG generated by the CLI. No JS, no runtime libraries (Mermaid, D3) in HTML output. Zero-runtime guarantee preserved.",
+      "Top-level pipeline graphic shows 5 stages (Idea -\u003e Scope -\u003e Sift -\u003e Ship -\u003e Deployed) with current stage highlighted.",
+      "Pipeline 'Deployed' marker requires a new additive 'vibesift deploy \u003cslug\u003e' command (sets deployedAt timestamp; does not advance phase).",
+      "Implementation tree view renders as inline SVG: parent tasks, subtasks indented, agent labels inline. Must be readable at 375px viewport (mobile).",
+      "Target v0.2.2 release. Additive only, backwards-compatible with existing sessions."
+    ],
+    "decision": "Ship in v0.2.2 as additive CLI changes only: 'ship subtask add', 'ship task add --agent', and 'deploy' commands, plus CLI-generated inline SVG for a 5-stage pipeline header and an indented implementation tree. Zero-runtime HTML preserved; existing v0.2.x sessions render unchanged.",
+    "decidedAt": 1778378749351
+  },
+  "sift": {
+    "options": [
+      {
+        "text": "Pipeline orientation: horizontal SVG pill-bar with arrows between 5 stages (looks 'pipeline-y'; mobile at 375px is tight - 'Deployed' label may need abbreviation or smaller font)",
+        "addedAt": 1778378819037
+      },
+      {
+        "text": "Pipeline orientation: vertical SVG stack of 5 stages (mobile-native; less recognizably a 'pipeline')",
+        "addedAt": 1778378819154
+      },
+      {
+        "text": "Tree style: inline SVG with horizontal indented boxes + L-shaped connectors (file-explorer feel, naturally narrow)",
+        "addedAt": 1778378819271
+      },
+      {
+        "text": "Tree style: inline SVG top-down org-chart (visually impressive; needs horizontal scroll on narrow screens)",
+        "addedAt": 1778378819388
+      },
+      {
+        "text": "Schema: add 'parent_id' field on flat task array (simple to render, easy to query)",
+        "addedAt": 1778378819506
+      },
+      {
+        "text": "Schema: nested 'subtasks' array on each task (preserves hierarchy structurally, requires recursion)",
+        "addedAt": 1778378819623
+      }
+    ],
+    "decision": "Pipeline = horizontal SVG pill-bar with media-query font scale for mobile. Tree = inline SVG with indented boxes and L-shaped connectors. Schema = optional 'parent_id' field on flat tasks array (with optional 'agent' field per task).",
+    "rationale": "Horizontal pipeline preserves left-to-right time metaphor that signals 'flow' at a glance; 5 pills + arrows fit at 375px with a 10px label font. Indented-boxes tree scales to any depth without horizontal overflow on mobile and uses the file-explorer mental model (familiar to technical readers). parent_id on flat tasks adds one optional field rather than restructuring; preserves existing iteration and matches vibesift's flat-typed-records state pattern.",
+    "decidedAt": 1778378851580
+  },
+  "ship": {
+    "tasks": [
+      {
+        "id": 1,
+        "text": "Schema: add optional parent_id and agent fields to task records; migrate existing sessions safely (no-op if absent)",
+        "done": true
+      },
+      {
+        "id": 2,
+        "text": "CLI: add 'ship subtask add \u003cparent_id\u003e ...', '--agent' flag on 'ship task add', and 'deploy \u003cslug\u003e' commands",
+        "done": true
+      },
+      {
+        "id": 3,
+        "text": "SVG pipeline generator: 5-stage horizontal pill-bar with current-stage highlight + arrows",
+        "done": true
+      },
+      {
+        "id": 4,
+        "text": "SVG tree generator: indented boxes with L-shaped connectors; renders task-\u003esubtask hierarchy + agent labels",
+        "done": true
+      },
+      {
+        "id": 5,
+        "text": "HTML template: wire pipeline SVG above session title; wire tree SVG into ship phase block",
+        "done": true
+      },
+      {
+        "id": 6,
+        "text": "CSS: responsive font-size scale on pipeline labels for \u003c600px viewport (inline \u003cstyle\u003e, no media-query JS)",
+        "done": true
+      },
+      {
+        "id": 7,
+        "text": "Tests: schema migration; new CLI commands; SVG output snapshots for known states",
+        "done": true
+      },
+      {
+        "id": 8,
+        "text": "Release: bump 0.2.1-\u003e0.2.2, CHANGELOG, README + SKILL.md additions, PR, tag, npm publish",
+        "done": true
+      }
+    ],
+    "diffUrl": null,
+    "shippedAt": 1778380485504
+  },
+  "decisions": [
+    {
+      "phase": "scope",
+      "text": "Ship in v0.2.2 as additive CLI changes only: 'ship subtask add', 'ship task add --agent', and 'deploy' commands, plus CLI-generated inline SVG for a 5-stage pipeline header and an indented implementation tree. Zero-runtime HTML preserved; existing v0.2.x sessions render unchanged.",
+      "decidedAt": 1778378749351
+    },
+    {
+      "phase": "sift",
+      "text": "Pipeline = horizontal SVG pill-bar with media-query font scale for mobile. Tree = inline SVG with indented boxes and L-shaped connectors. Schema = optional 'parent_id' field on flat tasks array (with optional 'agent' field per task).",
+      "decidedAt": 1778378851580
+    },
+    {
+      "phase": "ship",
+      "text": "v0.2.2 ready for review on PR #24. Tag + npm publish gated on owner approval — all build, test, and docs work landed; CI must go green before merge.",
+      "decidedAt": 1778380485504
+    }
+  ]
+}
+</script>
+<script>
+(function(){
+  var KEY='vibesift:theme';
+  var root=document.documentElement;
+  var btn=document.getElementById('theme-toggle');
+  var saved=null;
+  try { saved = localStorage.getItem(KEY); } catch(e) {}
+  var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  var theme = saved || (prefersLight ? 'light' : 'dark');
+  apply(theme);
+  if (btn) btn.addEventListener('click', function(){
+    var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    apply(next);
+    try { localStorage.setItem(KEY, next); } catch(e) {}
+  });
+  function apply(t){
+    root.setAttribute('data-theme', t);
+    if (btn) btn.textContent = t === 'light' ? '◐ DARK' : '◑ LIGHT';
+  }
+})();
+</script>
+</body>
+</html>

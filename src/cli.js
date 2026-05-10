@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path';
 import {
   emptyState, parseState, advancePhase, appendDecision,
   addOption, addConstraint, addTask, markTaskDone, setRationale, setDiffUrl,
-  PHASES,
+  markDeployed, PHASES,
 } from './state.js';
 import { renderHTML } from './template.js';
 import {
@@ -24,9 +24,10 @@ Commands
   vibesift scope <slug> add-constraint "..." [--no-commit]
   vibesift sift  <slug> add-option "..." [--no-commit]
   vibesift sift  <slug> rationale "..." [--no-commit]
-  vibesift ship  <slug> task add "..." [--agent <name>] [--no-commit]
+  vibesift ship  <slug> task add "..." [--agent <name>] [--parent <id>] [--no-commit]
   vibesift ship  <slug> task done <id> [--no-commit]
   vibesift ship  <slug> diff <url> [--no-commit]   (manually set the ship diff URL — e.g. a merged PR link)
+  vibesift deploy <slug> [--no-commit]   (stamp deployedAt — idempotent; reports existing date if already deployed)
   vibesift decide <slug> --phase <scope|sift|ship> --text "..." [--no-commit]
   vibesift advance <slug> [--no-commit]
   vibesift render <slug> [--no-commit]   (re-render HTML from existing state — use after template upgrades)
@@ -190,14 +191,19 @@ function cmdShip(argv) {
     const action = rest[2];
     const { state, path } = loadState(slug);
     if (action === 'add') {
-      // Pull --agent <name> out of the positional task-text args before joining.
-      // The flag can appear anywhere after `add`; everything else is the task text.
+      // Pull --agent <name> and --parent <id> out of the positional
+      // task-text args before joining. The flags can appear anywhere after
+      // `add`; everything else is the task text. They compose freely.
       const taskArgs = rest.slice(3);
       let agent = null;
+      let parent = null;
       const textParts = [];
       for (let i = 0; i < taskArgs.length; i++) {
         if (taskArgs[i] === '--agent' && i + 1 < taskArgs.length) {
           agent = taskArgs[i + 1];
+          i++;
+        } else if (taskArgs[i] === '--parent' && i + 1 < taskArgs.length) {
+          parent = taskArgs[i + 1];
           i++;
         } else {
           textParts.push(taskArgs[i]);
@@ -206,7 +212,16 @@ function cmdShip(argv) {
       const text = textParts.join(' ').trim();
       if (!text) die('task text required');
       const trimmedAgent = typeof agent === 'string' ? agent.trim() : '';
-      const id = addTask(state, text, trimmedAgent ? { agent: trimmedAgent } : undefined);
+      const trimmedParent = typeof parent === 'string' ? parent.trim() : '';
+      const opts = {};
+      if (trimmedAgent) opts.agent = trimmedAgent;
+      if (trimmedParent) opts.parentId = trimmedParent;
+      let id;
+      try {
+        id = addTask(state, text, Object.keys(opts).length ? opts : undefined);
+      } catch (e) {
+        die(e.message);
+      }
       const message = trimmedAgent
         ? `vibesift: ship task #${id} added to ${trimmedAgent} on ${slug}`
         : `vibesift: ship task #${id} added on ${slug}`;
@@ -337,6 +352,22 @@ function cmdAdvance(argv) {
   }
   const r = saveAndCommit(state, path, `vibesift: advance ${slug} → ${state.phase}`, { commit: !noCommit });
   reportCommit(r, `${before} → ${state.phase}`);
+}
+
+function cmdDeploy(argv) {
+  const { argv: rest, noCommit } = extractNoCommit(argv);
+  const slug = rest[0];
+  if (!slug) die('usage: vibesift deploy <slug> [--no-commit]');
+  const { state, path } = loadState(slug);
+  // Idempotent: if already deployed, surface the existing timestamp on
+  // stderr and exit 0 without rewriting the file or creating a commit.
+  if (state.deployedAt) {
+    process.stderr.write(`vibesift: already deployed at ${new Date(state.deployedAt).toISOString()}\n`);
+    return;
+  }
+  markDeployed(state);
+  const r = saveAndCommit(state, path, `vibesift: deployed ${slug}`, { commit: !noCommit });
+  reportCommit(r, `deployed ${slug} at ${new Date(state.deployedAt).toISOString()}`);
 }
 
 function cmdRender(argv) {
@@ -513,6 +544,7 @@ function main() {
     case 'ship': return cmdShip(rest);
     case 'decide': return cmdDecide(rest);
     case 'advance': return cmdAdvance(rest);
+    case 'deploy': return cmdDeploy(rest);
     case 'render': return cmdRender(rest);
     case 'status': return cmdStatus(rest);
     case 'list': return cmdList();

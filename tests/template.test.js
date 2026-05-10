@@ -187,3 +187,41 @@ test('JSON state block escapes </script> to prevent breakout', () => {
   assert.equal(parsed.scope.constraints[1], '<!-- <script>alert(2)</script> -->');
   assert.equal(parsed.scope.constraints[2], 'alert("&" symbol)');
 });
+
+test('pipeline SVG renders in the page header for any session', () => {
+  const s = emptyState({ slug: 'p', title: 'P' });
+  const html = renderHTML(s);
+  assert.match(html, /<div class="pipeline"/);
+  assert.match(html, /<svg [^>]*role="img"/);
+  // All five stage labels appear in the SVG.
+  for (const stage of ['Idea', 'Scope', 'Sift', 'Ship', 'Deployed']) {
+    assert.match(html, new RegExp(`>${stage}<`), `pipeline missing stage: ${stage}`);
+  }
+});
+
+test('pipeline marks the current stage based on phase', () => {
+  const s = emptyState({ slug: 'p', title: 'P' });
+  advancePhase(s); // → sift
+  const html = renderHTML(s);
+  // The pipeline tags each pill with data-status; the current one is "current".
+  assert.match(html, /data-stage="sift"[^>]*data-status="current"/);
+});
+
+test('ship-tree SVG is absent when no tasks', () => {
+  const s = emptyState({ slug: 't', title: 'T' });
+  advancePhase(s); advancePhase(s);
+  const html = renderHTML(s);
+  assert.doesNotMatch(html, /class="ship-tree"/);
+});
+
+test('ship-tree SVG renders when tasks exist, including agent labels', () => {
+  const s = emptyState({ slug: 't', title: 'T' });
+  advancePhase(s); advancePhase(s);
+  addTask(s, 'parent task', { agent: 'main' });
+  addTask(s, 'child task', { parentId: 1, agent: 'worktree-A' });
+  const html = renderHTML(s);
+  assert.match(html, /class="ship-tree"/);
+  assert.match(html, />parent task</);
+  assert.match(html, />child task</);
+  assert.match(html, />worktree-A</);
+});

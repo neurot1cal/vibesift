@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   emptyState, advancePhase, appendDecision, addOption, addConstraint,
-  addTask, markTaskDone, setRationale, setDiffUrl, parseState, PHASES,
+  addTask, markTaskDone, markDeployed, setRationale, setDiffUrl, parseState, PHASES,
 } from '../src/state.js';
 import { renderHTML } from '../src/template.js';
 
@@ -123,5 +123,85 @@ test('task with .agent round-trips through parseState(renderHTML(...))', () => {
   const recovered = parseState(html);
   assert.equal(recovered.ship.tasks[0].agent, 'bob');
   assert.equal(Object.prototype.hasOwnProperty.call(recovered.ship.tasks[1], 'agent'), false);
+  assert.deepEqual(recovered, original);
+});
+
+test('addTask accepts optional {parentId} and persists it as parentId', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  const id1 = addTask(s, 'parent task');
+  const id2 = addTask(s, 'child task', { parentId: id1 });
+  assert.equal(id2, 2);
+  assert.equal(s.ship.tasks[1].parentId, 1);
+  // Tasks added without parentId should NOT carry the field, so existing
+  // serialized sessions stay byte-identical.
+  assert.equal(Object.prototype.hasOwnProperty.call(s.ship.tasks[0], 'parentId'), false);
+});
+
+test('addTask accepts both {parentId, agent} together', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  addTask(s, 'parent');
+  const id = addTask(s, 'subtask', { parentId: 1, agent: 'worktree-A' });
+  assert.equal(s.ship.tasks[1].parentId, 1);
+  assert.equal(s.ship.tasks[1].agent, 'worktree-A');
+  assert.equal(id, 2);
+});
+
+test('addTask throws when parentId points at a non-existent task', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  addTask(s, 'first');
+  assert.throws(() => addTask(s, 'orphan', { parentId: 99 }), /parent task 99 not found/);
+});
+
+test('addTask throws when parentId is non-positive', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  addTask(s, 'first');
+  assert.throws(() => addTask(s, 'bad', { parentId: 0 }), /parent task 0 not found/);
+  assert.throws(() => addTask(s, 'bad', { parentId: -1 }), /parent task -1 not found/);
+});
+
+test('parentId round-trips through parseState(renderHTML(...))', () => {
+  const original = emptyState({ slug: 'rt-parent', title: 'RT Parent' });
+  advancePhase(original); advancePhase(original);
+  addTask(original, 'parent', { agent: 'main' });
+  addTask(original, 'child', { parentId: 1, agent: 'worktree-A' });
+  addTask(original, 'flat task');
+  const html = renderHTML(original);
+  const recovered = parseState(html);
+  assert.equal(recovered.ship.tasks[1].parentId, 1);
+  assert.equal(Object.prototype.hasOwnProperty.call(recovered.ship.tasks[2], 'parentId'), false);
+  assert.deepEqual(recovered, original);
+});
+
+test('emptyState includes deployedAt: null', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  assert.equal(s.deployedAt, null);
+});
+
+test('markDeployed sets deployedAt and bumps updatedAt', async () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  const before = s.updatedAt;
+  await new Promise(resolve => setTimeout(resolve, 2));
+  markDeployed(s);
+  assert.ok(s.deployedAt > 0, 'deployedAt should be set');
+  assert.ok(s.updatedAt > before, 'updatedAt should advance');
+  assert.equal(s.deployedAt, s.updatedAt);
+});
+
+test('markDeployed is idempotent: calling twice keeps the first timestamp', async () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  markDeployed(s);
+  const firstDeploy = s.deployedAt;
+  await new Promise(resolve => setTimeout(resolve, 2));
+  markDeployed(s);
+  assert.equal(s.deployedAt, firstDeploy, 'deployedAt should not be overwritten');
+});
+
+test('deployedAt round-trips through parseState(renderHTML(...))', () => {
+  const original = emptyState({ slug: 'rt-deploy', title: 'RT Deploy' });
+  advancePhase(original); advancePhase(original);
+  markDeployed(original);
+  const html = renderHTML(original);
+  const recovered = parseState(html);
+  assert.equal(recovered.deployedAt, original.deployedAt);
   assert.deepEqual(recovered, original);
 });

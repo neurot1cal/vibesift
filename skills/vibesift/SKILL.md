@@ -67,11 +67,18 @@ vibesift advance <slug>                               # scope → sift → ship
 vibesift sift <slug> add-option "..."
 vibesift sift <slug> rationale "..."
 vibesift decide <slug> --phase sift --text "..."
-vibesift ship <slug> task add "..."
+vibesift ship <slug> task add "..." [--agent <name>] [--parent <id>]
 vibesift ship <slug> task done <id>
+vibesift deploy <slug>                                # mark session deployed
 vibesift status <slug>
 vibesift list
 ```
+
+For multi-agent fan-out: add a parent task, then add child tasks with
+`--parent <parent_id>` and `--agent <name>`. The HTML renders the
+hierarchy as an inline SVG tree. The top-of-page pipeline graphic
+(Idea → Scope → Sift → Ship → Deployed) advances automatically as
+you call `advance` and `deploy`.
 
 Slugs are lowercase, hyphenated, max 80 chars (`/^[a-z0-9][a-z0-9-]{0,80}$/`).
 

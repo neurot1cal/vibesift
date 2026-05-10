@@ -115,11 +115,18 @@ vibesift advance blue-widget                 # → ship
 
 # ship phase
 vibesift ship blue-widget task add "scaffold index.html"
-vibesift ship blue-widget task add "wire color picker"
+vibesift ship blue-widget task add "wire color picker" --agent worktree-A
+vibesift ship blue-widget task add "color contrast tests" --parent 2 --agent worktree-A
 vibesift ship blue-widget task done 1
+vibesift deploy blue-widget                  # mark deployed; pipeline updates
 vibesift status blue-widget                  # print current state
 vibesift list                                # list every session in this repo
 ```
+
+The session HTML carries a 5-stage pipeline graphic at the top
+(Idea → Scope → Sift → Ship → Deployed) and an SVG tree inside
+the Ship section that shows parent → child task relationships and
+agent attribution at a glance.
 
 Enable GitHub Pages on `/docs` of your default branch and the page is live at
 `https://<owner>.github.io/<repo>/sessions/blue-widget/` within a minute.
