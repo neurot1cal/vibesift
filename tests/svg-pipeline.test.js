@@ -63,13 +63,20 @@ test('phase=ship without deployedAt marks Ship current', () => {
   assert.equal(statusOf(svg, 'Deployed'), 'pending');
 });
 
-test('phase=ship with deployedAt marks Deployed current; Ship completed', () => {
+test('phase=ship with deployedAt marks ALL five stages completed; no current', () => {
+  // Once deployedAt is set, the lifecycle is concluded — every stage renders
+  // as 'completed' (green), no stage carries 'current' (yellow). The connector
+  // arrows inherit upstream status, so they're all green too. Was previously
+  // marking Deployed as 'current'; that left a yellow pill at the end of an
+  // otherwise-green strip and a yellow connector leading into it, which read
+  // as "still actively deploying" rather than "shipped and live."
   const svg = renderPipeline({ phase: 'ship', deployedAt: 1715200000000 });
   assert.equal(statusOf(svg, 'Idea'), 'completed');
   assert.equal(statusOf(svg, 'Scope'), 'completed');
   assert.equal(statusOf(svg, 'Sift'), 'completed');
   assert.equal(statusOf(svg, 'Ship'), 'completed');
-  assert.equal(statusOf(svg, 'Deployed'), 'current');
+  assert.equal(statusOf(svg, 'Deployed'), 'completed');
+  assert.doesNotMatch(svg, /data-status="current"/);
 });
 
 test('Idea is never the current stage even on a fresh state', () => {
@@ -79,6 +86,12 @@ test('Idea is never the current stage even on a fresh state', () => {
   assert.notEqual(statusOf(noPhase, 'Idea'), 'current');
   const scope = renderPipeline({ phase: 'scope' });
   assert.notEqual(statusOf(scope, 'Idea'), 'current');
+});
+
+test('title reflects lifecycle-concluded framing when deployedAt is set', () => {
+  const svg = renderPipeline({ phase: 'ship', deployedAt: 1715200000000 });
+  assert.match(svg, /<title>Pipeline: lifecycle concluded · deployed<\/title>/);
+  assert.doesNotMatch(svg, /<title>[^<]*current stage undefined/);
 });
 
 test('SVG contains a <title> element for accessibility', () => {

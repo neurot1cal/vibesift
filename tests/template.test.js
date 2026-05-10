@@ -214,6 +214,14 @@ test('ship-tree SVG is absent when no tasks', () => {
   assert.doesNotMatch(html, /class="ship-tree"/);
 });
 
+test('brand-mark links back to the docs root', () => {
+  const s = emptyState({ slug: 'p', title: 'P' });
+  const html = renderHTML(s);
+  // The "vibesift" word is wrapped in an anchor pointing two levels up,
+  // which from /sessions/<slug>/ resolves to the docs root landing page.
+  assert.match(html, /<a class="brand-home" href="\.\.\/\.\.\/"[^>]*>vibesift<\/a>/);
+});
+
 test('ship-tree SVG renders when tasks exist, including agent labels', () => {
   const s = emptyState({ slug: 't', title: 'T' });
   advancePhase(s); advancePhase(s);

@@ -238,8 +238,10 @@ test('end-to-end: parent + child task + deploy renders pipeline + tree SVG with 
 
     const html = readFileSync(join(dir, 'docs', 'sessions', 'e2e', 'index.html'), 'utf8');
 
-    // Pipeline marks Deployed as current after the deploy command.
-    assert.match(html, /data-stage="deployed"[^>]*data-status="current"/);
+    // After deploy, the lifecycle is concluded — every pipeline stage
+    // renders as 'completed' and there is no 'current' stage.
+    assert.match(html, /data-stage="deployed"[^>]*data-status="completed"/);
+    assert.doesNotMatch(html, /data-status="current"/);
     // Tree SVG is present with both task names and agent badges.
     assert.match(html, /class="ship-tree"/);
     assert.match(html, />parent task</);

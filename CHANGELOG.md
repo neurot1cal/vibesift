@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] — 2026-05-10
+
+### Changed
+
+- **Pipeline shows all-green when deployed.** Previously, calling
+  `vibesift deploy <slug>` set the Deployed pill to "current" (yellow
+  accent) and left a yellow connector arrow leading into it from a
+  green Ship pill — visually reading as "still actively deploying"
+  rather than "shipped and live." Now `deployedAt` set marks every
+  stage as `completed`, no stage carries `current`, and all connector
+  arrows are green. The session's `<title>` mirrors this: "Pipeline:
+  lifecycle concluded · deployed."
+
+### Added
+
+- **Back-nav from session pages.** The "vibesift" word in the
+  session-page header is now an anchor (`href="../../"`, resolves to
+  the docs root). Hover/focus shows the accent yellow underline. Adds
+  `aria-label="Back to vibesift home"` for screen readers. Resolves
+  the "no nav back to root" mobile UX gap from the v0.2.2 dogfood.
+
+[0.2.3]: https://github.com/neurot1cal/vibesift/releases/tag/v0.2.3
+
 ## [0.2.2] — 2026-05-09
 
 ### Added
