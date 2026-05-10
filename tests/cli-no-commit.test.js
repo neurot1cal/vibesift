@@ -252,3 +252,117 @@ test('end-to-end: parent + child task + deploy renders pipeline + tree SVG with 
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('deploy --at backfills with the override timestamp', () => {
+  const { dir, env } = makeRepo();
+  try {
+    mkdirSync(join(dir, 'docs', 'sessions'), { recursive: true });
+    const initR = runCli(dir, env, ['init', 'legacy', '--title', 'Legacy session']);
+    assert.equal(initR.status, 0, `init failed: ${initR.stderr}`);
+
+    const deployR = runCli(dir, env, ['deploy', 'legacy', '--at', '2026-05-09T22:56:18Z']);
+    assert.equal(deployR.status, 0, `deploy --at failed: ${deployR.stderr}`);
+
+    // The HTML's embedded JSON should carry the override as deployedAt.
+    const html = readFileSync(join(dir, 'docs', 'sessions', 'legacy', 'index.html'), 'utf8');
+    const expected = Date.UTC(2026, 4, 9, 22, 56, 18); // 2026-05-09 22:56:18 UTC
+    assert.match(html, new RegExp(`"deployedAt": ${expected}`));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('deploy --at rejects unparseable date strings', () => {
+  const { dir, env } = makeRepo();
+  try {
+    mkdirSync(join(dir, 'docs', 'sessions'), { recursive: true });
+    runCli(dir, env, ['init', 's', '--title', 'S']);
+    const r = runCli(dir, env, ['deploy', 's', '--at', 'not-a-date', '--no-commit']);
+    assert.notEqual(r.status, 0, 'should exit non-zero');
+    assert.match(r.stderr, /could not parse "not-a-date" as a date/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('init auto-regenerates the landing index', () => {
+  const { dir, env } = makeRepo();
+  try {
+    mkdirSync(join(dir, 'docs', 'sessions'), { recursive: true });
+    // Bootstrap to create the docs/index.html that index regen needs.
+    const bootR = runCli(dir, env, ['bootstrap']);
+    assert.equal(bootR.status, 0, `bootstrap failed: ${bootR.stderr}`);
+
+    const initR = runCli(dir, env, ['init', 'autoindex', '--title', 'Auto-Index Session']);
+    assert.equal(initR.status, 0, `init failed: ${initR.stderr}`);
+
+    // docs/index.html should now reference the new session.
+    const indexHtml = readFileSync(join(dir, 'docs', 'index.html'), 'utf8');
+    assert.match(indexHtml, /href="sessions\/autoindex\/"/);
+
+    // git log should show the index-regen commit landed alongside init.
+    const log = spawnSync('git', ['-C', dir, 'log', '--oneline'], { encoding: 'utf8' });
+    assert.match(log.stdout, /vibesift: index regenerated/);
+    assert.match(log.stdout, /vibesift: scope started for autoindex/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('init --no-commit skips the index regen', () => {
+  const { dir, env } = makeRepo();
+  try {
+    mkdirSync(join(dir, 'docs', 'sessions'), { recursive: true });
+    runCli(dir, env, ['bootstrap']);
+    const before = readFileSync(join(dir, 'docs', 'index.html'), 'utf8');
+
+    const r = runCli(dir, env, ['init', 'preview-only', '--title', 'Preview', '--no-commit']);
+    assert.equal(r.status, 0, `init failed: ${r.stderr}`);
+
+    // index.html should be unchanged because --no-commit skipped the regen.
+    const after = readFileSync(join(dir, 'docs', 'index.html'), 'utf8');
+    assert.equal(after, before, 'docs/index.html should not have been touched');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('bootstrap aborts on a dirty working tree without --force', () => {
+  const { dir, env } = makeRepo();
+  try {
+    // Leave an untracked file. `git status --porcelain` lists untracked
+    // files with `??` so the dirty-tree check fires either way (staged or
+    // untracked). Untracked is the more common real-world shape.
+    spawnSync('sh', ['-c', `echo "junk" > "${dir}/scratch.txt"`], { env });
+
+    const r = runCli(dir, env, ['bootstrap']);
+    assert.notEqual(r.status, 0, 'bootstrap should exit non-zero on dirty tree');
+    assert.match(r.stderr, /uncommitted file/);
+    assert.match(r.stderr, /--force/);
+
+    // No bootstrap commit should have been created.
+    const log = spawnSync('git', ['-C', dir, 'log', '--oneline'], { encoding: 'utf8' });
+    assert.doesNotMatch(log.stdout, /vibesift: bootstrap/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('bootstrap --force proceeds on a dirty tree', () => {
+  const { dir, env } = makeRepo();
+  try {
+    spawnSync('sh', ['-c', `echo "junk" > "${dir}/scratch.txt"`], { env });
+
+    const r = runCli(dir, env, ['bootstrap', '--force']);
+    assert.equal(r.status, 0, `bootstrap --force failed: ${r.stderr}`);
+
+    const log = spawnSync('git', ['-C', dir, 'log', '--oneline'], { encoding: 'utf8' });
+    assert.match(log.stdout, /vibesift: bootstrap/);
+    // The untracked scratch.txt should NOT have been pulled into the
+    // bootstrap commit (autoCommit only stages docs/index.html explicitly).
+    const showStaged = spawnSync('git', ['-C', dir, 'show', '--name-only', 'HEAD'], { encoding: 'utf8' });
+    assert.doesNotMatch(showStaged.stdout, /scratch\.txt/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

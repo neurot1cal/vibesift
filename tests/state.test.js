@@ -196,6 +196,33 @@ test('markDeployed is idempotent: calling twice keeps the first timestamp', asyn
   assert.equal(s.deployedAt, firstDeploy, 'deployedAt should not be overwritten');
 });
 
+test('markDeployed honors opts.at for retroactive backfill', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  const past = Date.UTC(2026, 4, 9, 10, 0, 0); // 2026-05-09 10:00 UTC
+  markDeployed(s, { at: past });
+  assert.equal(s.deployedAt, past, 'deployedAt should be the override value');
+  // updatedAt is when the mark happened (now), NOT the override timestamp,
+  // because updatedAt is the audit trail of CLI activity.
+  assert.ok(s.updatedAt > past, 'updatedAt should advance past the override timestamp');
+});
+
+test('markDeployed rejects non-finite or non-positive opts.at', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  assert.throws(() => markDeployed(s, { at: 'tomorrow' }), /finite positive/);
+  assert.throws(() => markDeployed(s, { at: 0 }), /finite positive/);
+  assert.throws(() => markDeployed(s, { at: -1 }), /finite positive/);
+  assert.throws(() => markDeployed(s, { at: NaN }), /finite positive/);
+});
+
+test('opts.at override is ignored when deployedAt already set (idempotency wins)', () => {
+  const s = emptyState({ slug: 'a', title: 'A' });
+  markDeployed(s);
+  const original = s.deployedAt;
+  const past = Date.UTC(2026, 0, 1);
+  markDeployed(s, { at: past });
+  assert.equal(s.deployedAt, original, 'override should not overwrite existing deployedAt');
+});
+
 test('deployedAt round-trips through parseState(renderHTML(...))', () => {
   const original = emptyState({ slug: 'rt-deploy', title: 'RT Deploy' });
   advancePhase(original); advancePhase(original);

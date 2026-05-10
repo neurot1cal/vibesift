@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4] — 2026-05-10
+
+### Added
+
+- **`vibesift init` auto-regenerates the landing index.** New sessions
+  appear at vibesift.com (or `<owner>.github.io/<repo>/`) without a
+  separate `vibesift index` step. Two commits per init: the session
+  creation, then the index regeneration. Skipped when init is run with
+  `--no-commit`. Best-effort: a regen failure (no `<section class=
+  "sessions">` in `docs/index.html`, etc.) doesn't undo the init.
+- **`vibesift deploy <slug> --at <iso-date>`.** Retroactive backfill
+  with accurate timestamps for sessions that genuinely deployed earlier
+  but predate the `vibesift deploy` command (v0.1.x sessions, the
+  vibesift-com-landing session, etc.). The override applies to
+  `state.deployedAt` only; `state.updatedAt` always reflects when the
+  CLI ran. Idempotency wins: `--at` is ignored if `deployedAt` is
+  already set.
+- **`vibesift bootstrap` aborts on a dirty working tree.** Bootstrap
+  is a one-time-per-repo command; running it on a dirty tree usually
+  means the user is mid-task and bootstrap is happening accidentally.
+  Pass `--force` to skip the check.
+- **Bootstrap stub (`INDEX_TEMPLATE`) ships a `<section class="sessions">`
+  block** so the next `vibesift index` (or auto-index after `init`)
+  has somewhere to inject the markers. Repos that already have a
+  customized `docs/index.html` are unaffected.
+
+### Changed
+
+- **`statusClassAndLabel`** in the index renderer treats
+  `state.deployedAt` as a sufficient "shipped" signal in addition to
+  `state.ship.shippedAt`. Sessions marked via `vibesift deploy`
+  (especially v0.1.x-era sessions that predate the explicit
+  `decide --phase ship` pattern) flip to the green pip on the landing.
+  (Already merged at the source level; this release is when it ships
+  to npm consumers.)
+
+[0.2.4]: https://github.com/neurot1cal/vibesift/releases/tag/v0.2.4
+
 ## [0.2.3] — 2026-05-10
 
 ### Changed

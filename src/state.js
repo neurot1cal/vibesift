@@ -138,10 +138,24 @@ export function setDiffUrl(state, url) {
 // Mark the session as deployed to production. Idempotent: the first call
 // stamps the timestamp; subsequent calls are no-ops so the original deploy
 // time is preserved as the canonical "live" moment.
-export function markDeployed(state) {
+//
+// opts.at (number, ms since epoch) overrides Date.now() for retroactive
+// backfill — set this when the actual deployment happened in the past and
+// you're running `vibesift deploy --at <iso-date>` to record it accurately.
+// updatedAt always reflects the moment the mark happened (when the CLI ran),
+// not the override timestamp; updatedAt is the audit trail of activity, not
+// of when the lifecycle event occurred.
+export function markDeployed(state, opts = {}) {
   if (state.deployedAt) return state;
-  const now = Date.now();
-  state.deployedAt = now;
-  state.updatedAt = now;
+  let at = Date.now();
+  if (opts && opts.at !== undefined && opts.at !== null) {
+    const override = Number(opts.at);
+    if (!Number.isFinite(override) || override <= 0) {
+      throw new Error(`markDeployed: opts.at must be a finite positive number, got ${opts.at}`);
+    }
+    at = override;
+  }
+  state.deployedAt = at;
+  state.updatedAt = Date.now();
   return state;
 }
