@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-05-09
+
+### Fixed
+
+- **Cross-harness skill install was broken in v0.2.0.**
+  `package.json#files` didn't include `skills/`, so the canonical
+  `SKILL.md` wasn't in the published tarball. `vibesift install` from
+  a fresh `npm install -g vibesift` failed with `canonical skill not
+  found at .../skills/vibesift/SKILL.md`. Added `skills/` to the
+  whitelist and bumped the `pack-audit.yml` expectation in the same
+  PR so this can't recur.
+
+[0.2.1]: https://github.com/neurot1cal/vibesift/releases/tag/v0.2.1
+
 ## [0.2.0] — 2026-05-09
 
 ### Added
@@ -85,6 +99,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dual MIT / Apache-2.0 license
 - Governance: CONTRIBUTING, CODE_OF_CONDUCT, SECURITY policies
 
-[Unreleased]: https://github.com/neurot1cal/vibesift/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/neurot1cal/vibesift/compare/v0.2.1...HEAD
 [0.2.0]: https://github.com/neurot1cal/vibesift/releases/tag/v0.2.0
 [0.1.0]: https://github.com/neurot1cal/vibesift/releases/tag/v0.1.0

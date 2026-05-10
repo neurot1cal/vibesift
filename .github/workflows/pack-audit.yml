@@ -52,6 +52,7 @@ jobs:
             LICENSE-MIT
             README.md
             package.json
+            skills/vibesift/SKILL.md
             src/cli.js
             src/git.js
             src/index-renderer.js
