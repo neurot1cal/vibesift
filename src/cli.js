@@ -94,7 +94,31 @@ function saveAndCommit(state, path, message, opts = {}) {
     return { ok: true, committed: false, skipped: true };
   }
   const result = autoCommit({ paths: [path], message });
+  // Auto-regen the landing index after any successful state-mutation commit
+  // so the landing's "last updated" date reflects the most recent activity.
+  // Without this, the landing goes stale the moment a session is edited,
+  // re-rendered, or has a task marked done — only `vibesift init` and the
+  // explicit `vibesift index` command kept the landing fresh before v0.2.7.
+  regenIndexAfterCommit(result);
   return result;
+}
+
+// Shared regen-after-mutation helper. Call after any successful state-
+// mutation autoCommit. Idempotent — if regen produces no diff, no commit
+// is made. Best-effort: a missing or malformed docs/index.html doesn't
+// fail the calling command.
+function regenIndexAfterCommit(commitResult) {
+  if (!commitResult || !commitResult.committed || commitResult.skipped) return;
+  try {
+    const root = repoRoot();
+    if (!root) return;
+    const idx = regenerateLandingIndex({ repoRoot: root });
+    if (idx.changed) {
+      autoCommit({ paths: [idx.path], message: 'vibesift: index regenerated' });
+    }
+  } catch (e) {
+    process.stderr.write(`vibesift: index regen skipped — ${e.message}\n`);
+  }
 }
 
 function reportCommit(result, message) {
@@ -144,22 +168,10 @@ function cmdInit(argv) {
       message: `vibesift: scope started for ${slug}`,
     });
     reportCommit(result, `created ${path}`);
-    // Auto-regenerate the landing index so the new session appears at
-    // vibesift.com without a separate `vibesift index` step. Done as its
-    // own commit (separate from the init commit) so the audit trail is
-    // accurate: init created the session, index regen updated the listing.
-    // Best-effort — failure here doesn't undo the init.
-    try {
-      const root = repoRoot(cwd);
-      if (root) {
-        const idx = regenerateLandingIndex({ repoRoot: root });
-        if (idx.changed) {
-          autoCommit({ paths: [idx.path], message: 'vibesift: index regenerated' });
-        }
-      }
-    } catch (e) {
-      process.stderr.write(`vibesift: index regen skipped — ${e.message}\n`);
-    }
+    // Regenerate the landing index so the new session appears at the
+    // root immediately. Shared helper handles the audit-trail commit;
+    // best-effort, won't undo the init on regen failure.
+    regenIndexAfterCommit(result);
   }
   process.stdout.write(`session: ${slug}\nstatus: scoping\nfile: docs/sessions/${slug}/index.html\n`);
 }
@@ -413,6 +425,8 @@ function cmdRender(argv) {
     message: `vibesift: re-render ${slug} from current template`,
   });
   reportCommit(r, `re-rendered ${slug}`);
+  // Re-renders bump updatedAt, so the landing's date column needs a refresh.
+  regenIndexAfterCommit(r);
 }
 
 function cmdStatus(argv) {
