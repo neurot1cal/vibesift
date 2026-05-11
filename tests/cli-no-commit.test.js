@@ -7,7 +7,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, readFileSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, rmSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -362,6 +362,65 @@ test('bootstrap --force proceeds on a dirty tree', () => {
     // bootstrap commit (autoCommit only stages docs/index.html explicitly).
     const showStaged = spawnSync('git', ['-C', dir, 'show', '--name-only', 'HEAD'], { encoding: 'utf8' });
     assert.doesNotMatch(showStaged.stdout, /scratch\.txt/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('non-init state-mutation commands auto-regen the landing index', () => {
+  // The v0.2.7 fix: render, task done, decide, etc. — all state-mutation
+  // commands now regenerate the landing. Before v0.2.7, only `init` did,
+  // so the landing went stale the moment a session was edited. This test
+  // simulates the stale-landing state by corrupting docs/index.html
+  // post-init, then runs a non-init mutation and verifies the regen
+  // restored the session row.
+  const { dir, env } = makeRepo();
+  try {
+    mkdirSync(join(dir, 'docs', 'sessions'), { recursive: true });
+    runCli(dir, env, ['bootstrap']);
+    runCli(dir, env, ['init', 'm1', '--title', 'First']);
+
+    // Corrupt the landing — remove the m1 session row entirely.
+    const indexPath = join(dir, 'docs', 'index.html');
+    let indexHtml = readFileSync(indexPath, 'utf8');
+    indexHtml = indexHtml.replace(/<a class="sess-row"[\s\S]*?<\/a>\s*/g, '');
+    writeFileSync(indexPath, indexHtml);
+    spawnSync('git', ['-C', dir, 'add', 'docs/index.html'], { env });
+    spawnSync('git', ['-C', dir, 'commit', '-m', 'test: corrupt landing'], { env });
+    assert.doesNotMatch(readFileSync(indexPath, 'utf8'), /href="sessions\/m1\/"/, 'landing should be corrupted pre-render');
+
+    // Run a render — a non-init state mutation. Regen should fire and
+    // restore the m1 row.
+    const r = runCli(dir, env, ['render', 'm1']);
+    assert.equal(r.status, 0, `render failed: ${r.stderr}`);
+
+    const indexAfter = readFileSync(indexPath, 'utf8');
+    assert.match(indexAfter, /href="sessions\/m1\/"/, 'render should have regenerated the landing with m1');
+
+    const log = spawnSync('git', ['-C', dir, 'log', '--oneline'], { encoding: 'utf8' });
+    const regenCount = (log.stdout.match(/vibesift: index regenerated/g) || []).length;
+    assert.ok(regenCount >= 2, `expected >=2 regen commits (init + render), got ${regenCount}: ${log.stdout}`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('render --no-commit does not trigger an index regen commit', () => {
+  const { dir, env } = makeRepo();
+  try {
+    mkdirSync(join(dir, 'docs', 'sessions'), { recursive: true });
+    runCli(dir, env, ['bootstrap']);
+    runCli(dir, env, ['init', 'preview', '--title', 'Preview']);
+
+    const before = spawnSync('git', ['-C', dir, 'log', '--oneline'], { encoding: 'utf8' });
+    const beforeCount = before.stdout.trim().split('\n').length;
+
+    const r = runCli(dir, env, ['render', 'preview', '--no-commit']);
+    assert.equal(r.status, 0, `render --no-commit failed: ${r.stderr}`);
+
+    const after = spawnSync('git', ['-C', dir, 'log', '--oneline'], { encoding: 'utf8' });
+    const afterCount = after.stdout.trim().split('\n').length;
+    assert.equal(afterCount, beforeCount, `no new commits expected; before=${beforeCount} after=${afterCount}`);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

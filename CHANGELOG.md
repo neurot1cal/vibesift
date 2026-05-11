@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.7] — 2026-05-11
+
+### Fixed
+
+- **Landing index auto-regenerates on every state mutation, not just
+  on `init`.** Previously only `vibesift init` triggered an index
+  regen (v0.2.4 fix). All other mutations — `render`, `task done`,
+  `decide`, `advance`, `deploy`, `scope add-constraint`, `sift
+  add-option`, `sift rationale`, `ship diff` — left the landing
+  stale. Surfaced by reviewer feedback: "why are we still not
+  updating the sessions section here?" — the date column on
+  vibesift.com still said 2026-05-10 even after sessions were
+  re-rendered on 2026-05-11.
+- Extracted `regenIndexAfterCommit` helper shared by `saveAndCommit`,
+  `cmdInit`, and `cmdRender`. Idempotent — if regen produces no diff
+  the helper is a no-op, no second commit. Best-effort — a missing
+  or malformed `docs/index.html` is logged to stderr and doesn't
+  fail the calling command.
+
+[0.2.7]: https://github.com/neurot1cal/vibesift/releases/tag/v0.2.7
+
 ## [0.2.6] — 2026-05-10
 
 ### Added
