@@ -214,6 +214,32 @@ test('ship-tree SVG is absent when no tasks', () => {
   assert.doesNotMatch(html, /class="ship-tree"/);
 });
 
+test('toolbar contains both theme-toggle and copy-prompt buttons', () => {
+  const s = emptyState({ slug: 'p', title: 'P' });
+  const html = renderHTML(s);
+  assert.match(html, /<div class="toolbar">/);
+  assert.match(html, /<button id="copy-prompt"[^>]*>⎘ COPY AS PROMPT<\/button>/);
+  assert.match(html, /<button id="theme-toggle"[^>]*>◐ DARK<\/button>/);
+});
+
+test('copy-prompt button has aria-label for screen readers', () => {
+  const s = emptyState({ slug: 'p', title: 'P' });
+  const html = renderHTML(s);
+  assert.match(html, /id="copy-prompt"[^>]*aria-label="Copy this session as a prompt to paste into Claude"/);
+});
+
+test('THEME_SCRIPT contains the copy-as-prompt builder', () => {
+  // Sanity check: the inline JS exports must include the prompt-builder
+  // logic. Smoke-tests against the structured-prompt sections we promise.
+  const s = emptyState({ slug: 'p', title: 'P' });
+  const html = renderHTML(s);
+  assert.match(html, /copy-prompt/);
+  assert.match(html, /## Scope/);
+  assert.match(html, /## Sift/);
+  assert.match(html, /## Ship/);
+  assert.match(html, /Continue from where this left off/);
+});
+
 test('scope decision is labeled "Approach" and rendered before constraints', () => {
   const s = emptyState({ slug: 'a', title: 'A', problem: 'a real problem' });
   addConstraint(s, 'a constraint');

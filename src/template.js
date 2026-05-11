@@ -317,30 +317,54 @@ const STYLES = `
     cursor: pointer;
     list-style: none;
     color: var(--text-muted);
-    padding: 0.125rem 0 0.125rem 0.875rem;
+    padding: 0.125rem 1.5rem 0.125rem 1rem;
     position: relative;
     border-radius: 3px;
     transition: color 120ms;
   }
   details.record > summary::-webkit-details-marker { display: none; }
+  /* Leading chevron — accent-colored when collapsed (was text-faint) so the
+     affordance is visible on mobile without a hover state. Larger than the
+     prior glyph (0.95em vs the default 0.6875rem inherited from .brand-mark
+     siblings) so it reads as a control, not decoration. Sanjeet's v0.2.5
+     dogfood showed the previous version went unnoticed and the truncation
+     read as a bug. */
   details.record > summary::before {
     content: "›";
     position: absolute;
     left: 0;
     top: 0.0625rem;
-    color: var(--text-faint);
+    color: var(--accent);
     font-family: ui-monospace, monospace;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 0.95em;
     transition: transform 150ms ease, color 150ms ease;
     transform-origin: 0.4em 0.5em;
     display: inline-block;
+  }
+  /* Trailing "expand" hint — visible on collapsed records, hidden when open.
+     The chevron alone wasn't enough; an explicit "more" suffix on the right
+     end of the summary line gives a second affordance the eye can land on
+     even after scrolling past the leading chevron. */
+  details.record:not([open]) > summary::after {
+    content: " more ↓";
+    position: absolute;
+    right: 0.25rem;
+    top: 0.125rem;
+    color: var(--accent);
+    font-family: ui-monospace, monospace;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    opacity: 0.85;
   }
   details.record[open] > summary::before {
     transform: rotate(90deg);
     color: var(--accent);
   }
   details.record > summary:hover { color: var(--text); }
-  details.record > summary:hover::before { color: var(--accent); }
+  details.record > summary:hover::after { opacity: 1; }
   details.record > .record-body {
     margin-top: 0.375rem;
     padding: 0.625rem 0.875rem 0.625rem 1rem;
@@ -436,11 +460,18 @@ const STYLES = `
     .pipeline svg text { font-size: 10px; }
   }
 
-  /* Theme toggle — top-right of the page, both themes. */
-  .theme-toggle {
+  /* Header toolbar — theme toggle + copy-as-prompt button live here, top-
+     right, stacked or side-by-side depending on width. The .toolbar wraps
+     both so they share placement and so the layout doesn't depend on each
+     button's individual absolute position. */
+  .toolbar {
     position: absolute;
     top: 0;
     right: 0;
+    display: flex;
+    gap: 0.375rem;
+  }
+  .toolbar button {
     background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text-dim);
@@ -450,12 +481,19 @@ const STYLES = `
     cursor: pointer;
     letter-spacing: 0.08em;
   }
-  .theme-toggle:hover { border-color: var(--accent); color: var(--text); }
+  .toolbar button:hover { border-color: var(--accent); color: var(--text); }
+  .copy-prompt.copied { color: var(--positive); border-color: var(--positive); }
 `;
 
-// Inline JS — toggle dark/light, persist choice in localStorage, respect
-// prefers-color-scheme on first load. Kept tiny on purpose; this is the
-// only JS the page ever ships.
+// Inline JS — toggle dark/light + "copy as prompt" export button. Both
+// kept tiny on purpose; this is the only JS the page ever ships and the
+// zero-runtime-dep promise carries through (no fetch, no module load).
+//
+// "Copy as prompt" reads the embedded JSON state block and emits a
+// structured plaintext summary of the session, ready to paste into a new
+// Claude session as a context primer. Follows the export-on-page-load
+// pattern called out in Thariq's "Unreasonable Effectiveness of HTML"
+// essay: every artifact ends in a copy-button.
 const THEME_SCRIPT = `
 (function(){
   var KEY='vibesift:theme';
@@ -475,6 +513,82 @@ const THEME_SCRIPT = `
     root.setAttribute('data-theme', t);
     if (btn) btn.textContent = t === 'light' ? '◐ DARK' : '◑ LIGHT';
   }
+
+  // Copy-as-prompt: read state JSON, build a structured plaintext summary,
+  // write to clipboard. Falls back to a hidden textarea + execCommand on
+  // browsers without async clipboard.
+  var copyBtn = document.getElementById('copy-prompt');
+  if (copyBtn) copyBtn.addEventListener('click', function(){
+    var stateNode = document.getElementById('vibesift-state');
+    if (!stateNode) return;
+    var state;
+    try { state = JSON.parse(stateNode.textContent); } catch(e) { return; }
+    var lines = [];
+    lines.push('You are continuing work on the "' + state.title + '" vibesift session (slug: ' + state.slug + ').');
+    lines.push('');
+    lines.push('Current phase: ' + state.phase);
+    if (state.branch) lines.push('Branch: ' + state.branch);
+    lines.push('');
+    lines.push('## Scope');
+    if (state.scope && state.scope.problem) lines.push('Problem: ' + state.scope.problem);
+    if (state.scope && state.scope.constraints && state.scope.constraints.length) {
+      lines.push('Constraints:');
+      for (var i = 0; i < state.scope.constraints.length; i++) {
+        lines.push('- ' + state.scope.constraints[i]);
+      }
+    }
+    if (state.scope && state.scope.decision) lines.push('Approach: ' + state.scope.decision);
+    lines.push('');
+    lines.push('## Sift');
+    if (state.sift && state.sift.options && state.sift.options.length) {
+      lines.push('Options considered:');
+      for (var j = 0; j < state.sift.options.length; j++) {
+        lines.push('- ' + state.sift.options[j].text);
+      }
+    }
+    if (state.sift && state.sift.rationale) lines.push('Rationale: ' + state.sift.rationale);
+    if (state.sift && state.sift.decision) lines.push('Chose: ' + state.sift.decision);
+    lines.push('');
+    lines.push('## Ship');
+    if (state.ship && state.ship.tasks && state.ship.tasks.length) {
+      lines.push('Tasks:');
+      for (var k = 0; k < state.ship.tasks.length; k++) {
+        var t = state.ship.tasks[k];
+        var mark = t.done ? 'x' : ' ';
+        var agent = t.agent ? ' [' + t.agent + ']' : '';
+        lines.push('- [' + mark + '] ' + t.text + agent);
+      }
+    }
+    if (state.ship && state.ship.shippedAt) {
+      lines.push('Shipped: ' + new Date(state.ship.shippedAt).toISOString().slice(0,10));
+    }
+    if (state.deployedAt) {
+      lines.push('Deployed: ' + new Date(state.deployedAt).toISOString().slice(0,10));
+    }
+    lines.push('');
+    lines.push('Continue from where this left off.');
+    var text = lines.join('\\n');
+    function showCopied(){
+      copyBtn.classList.add('copied');
+      var prev = copyBtn.textContent;
+      copyBtn.textContent = '✓ COPIED';
+      setTimeout(function(){ copyBtn.textContent = prev; copyBtn.classList.remove('copied'); }, 2000);
+    }
+    function fallback(){
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); showCopied(); } catch(e) {}
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(showCopied, fallback);
+    } else {
+      fallback();
+    }
+  });
 })();
 `;
 
@@ -508,7 +622,10 @@ export function renderHTML(state) {
 </head>
 <body>
 <header>
-  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">◐ DARK</button>
+  <div class="toolbar">
+    <button id="copy-prompt" class="copy-prompt" type="button" aria-label="Copy this session as a prompt to paste into Claude">⎘ COPY AS PROMPT</button>
+    <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">◐ DARK</button>
+  </div>
   <div class="brand-mark"><a class="brand-home" href="../../" aria-label="Back to vibesift home">vibesift</a> · ${escapeHtml(state.slug)}</div>
   <h1>${escapeHtml(state.title)}</h1>
   <div class="meta-line">
