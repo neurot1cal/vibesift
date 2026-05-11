@@ -54,9 +54,16 @@ vibesift is the smallest possible thing that fixes that:
   Single source of truth. No sidecar files.
 - Each CLI command auto-commits to the current branch. Git log IS the audit
   trail; every constraint, every option, every task is its own commit.
-- Pure Node 20+ CLI, zero runtime dependencies, inline CSS, no JS framework.
+- Pure Node 20+ CLI, zero runtime dependencies, inline CSS, one inline script
+  block (theme toggle + copy-as-prompt export).
 - One canonical skill markdown installs globally into Claude Code, Codex,
   OpenCode, and Gemini CLI; Cursor via a per-project rule file.
+
+> Thariq from the Claude Code team made the same case in detail in
+> ["The Unreasonable Effectiveness of HTML"](https://x.com/trq212/status/2052809885763747935):
+> "I tend to not actually read more than a 100-line markdown file."
+> vibesift is the productized form of that pattern for terminal-driven
+> agent flows — same thesis, structured around scope/sift/ship phases.
 
 ## Install
 
@@ -126,10 +133,47 @@ vibesift list                                # list every session in this repo
 The session HTML carries a 5-stage pipeline graphic at the top
 (Idea → Scope → Sift → Ship → Deployed) and an SVG tree inside
 the Ship section that shows parent → child task relationships and
-agent attribution at a glance.
+agent attribution at a glance. A "Copy as prompt" button in the
+header exports the session as a structured plaintext primer ready
+to paste into a new Claude session.
 
 Enable GitHub Pages on `/docs` of your default branch and the page is live at
 `https://<owner>.github.io/<repo>/sessions/blue-widget/` within a minute.
+
+## Use cases
+
+- **PR companion** — open a session per PR. Use scope to capture
+  what the PR is about and why, sift to record alternatives
+  considered, ship to track tasks. Link the session URL in the
+  PR description so reviewers see your reasoning before diving
+  into the diff. (Pattern from Thariq's HTML essay: "I attach a
+  HTML code explainer to every PR I make now.")
+- **Spec / planning artifact** — start a session before any code
+  lands; the scope phase becomes the design doc and the ship
+  phase becomes the work-tracking checklist. The same URL serves
+  spec, plan, and audit log over the life of the work.
+- **Incident or postmortem** — scope captures the timeline and
+  blast radius, sift records the alternatives considered for
+  mitigation, ship tracks the followups. Stakeholders read the
+  page without needing terminal access.
+- **Research / weekly status** — synthesis-heavy work that would
+  otherwise ship as a long markdown nobody reads. The collapsible
+  records keep the at-a-glance summary tight while preserving
+  every supporting detail one click away.
+
+## Tradeoffs
+
+- **HTML diffs are noisy.** State JSON inside the HTML changes on
+  every CLI mutation, so git diffs show large blobs even for small
+  content changes. Reviewers should prefer the rendered HTML
+  (GitHub Pages or a local browser) over the raw `git diff` for
+  understanding what changed in a session. The granular per-mutation
+  commit history compensates: each commit's message names the
+  specific change, so `git log` is the cleaner read.
+- **Two-way interaction is out of scope (v1).** Sessions are
+  read-only; comments / annotations / in-page editing happen
+  outside the page. Trade-off chosen so the page can ship as a
+  single self-contained file with no backend to operate.
 
 **See vibesift dogfooding itself:** [docs/sessions/v0-1-launch/](docs/sessions/v0-1-launch/index.html)
 (once you enable GitHub Pages on `/docs`, this will be live at

@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6] — 2026-05-10
+
+### Added
+
+- **"Copy as prompt" button in the session header.** Reads the
+  embedded JSON state, builds a structured plaintext summary
+  (phase + scope problem/constraints/approach + sift options/
+  rationale/decision + ship task list), and writes it to the
+  clipboard. Ready to paste into a new Claude session as a
+  context primer. Falls back to a hidden-textarea + execCommand
+  on browsers without async clipboard.
+- **README "Use cases" section** — PR companion, spec/planning
+  artifact, incident/postmortem, research/status. Concrete
+  patterns for how to use sessions beyond the dogfood example.
+- **README "Tradeoffs" section** — explicitly names "HTML diffs
+  are noisy" and the read-only-by-design limitation. Honest
+  framing, not buried.
+- **Thariq citation in README** — links to the Claude Code team's
+  "Unreasonable Effectiveness of HTML" essay as external
+  validation of the HTML-over-markdown thesis.
+
+### Changed
+
+- **Collapsible-record affordance is now obvious on mobile.**
+  Leading chevron is accent-yellow when collapsed (was muted gray,
+  only went accent on hover — invisible on touch devices). Added
+  a trailing "more ↓" badge on collapsed summaries so the
+  expandability is signaled at both ends of the summary line.
+  Fixes the v0.2.5 dogfood report ("Sections are truncated, is
+  that intentional for testing?" — Sanjeet).
+
+[0.2.6]: https://github.com/neurot1cal/vibesift/releases/tag/v0.2.6
+
 ## [0.2.5] — 2026-05-10
 
 ### Changed
