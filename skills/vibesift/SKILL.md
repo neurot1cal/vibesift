@@ -18,6 +18,8 @@ the vibesift sense — meaning they want a tracked, three-phase artifact in
 
 - "vibesift this" / "vibesift the X feature"
 - "start a vibesift session" / "new vibesift session"
+- "vibesift propose <slug>" / "propose a vibesift session for X"
+- "kickoff a session" / "start a new session"
 - "/scope", "/sift", "/ship" as explicit slash commands
 - "advance the session" / "advance to sift" / "advance to ship"
 - "let's scope this as a vibesift session"
@@ -60,7 +62,9 @@ The CLI is the single source of truth. All harnesses shell out to it.
 
 ```
 vibesift bootstrap                                    # one-time per repo
-vibesift init <slug> --title "..." [--problem "..."]  # creates the session
+vibesift propose <slug> [--title "..."] [--problem "..."] [--no-open]
+                                                      # low-friction kickoff: scans repo, seeds constraints + tasks, opens browser
+vibesift init <slug> --title "..." [--problem "..."]  # creates an empty session
 vibesift scope <slug> add-constraint "..."
 vibesift decide <slug> --phase scope --text "..."
 vibesift advance <slug>                               # scope → sift → ship
@@ -98,6 +102,31 @@ above):
 6. Then `vibesift advance <slug>` to move to sift.
 
 Same shape applies to sift and ship.
+
+For a faster start that pre-seeds the session with project-type-derived
+constraints and a starter task list, use `vibesift propose <slug>` instead
+of `init`. `propose` auto-bootstraps `docs/sessions/`, scans the repo to
+classify the project (node / python / rust / go / static), seeds the
+constraints and ship tasks accordingly, opens the rendered page in the
+default browser, and commits the result as `vibesift: propose <slug>`. It
+prompts only when run interactively in a TTY; in CI or agent flows, pass
+all values via `--title` and `--problem`.
+
+## Auto-ticking discipline
+
+When you finish a unit of work that corresponds to an open ship task, mark
+it done immediately, before moving on. Run:
+
+    vibesift ship <slug> task done <id>
+
+Do this inline as part of the same response that completed the work. Do
+not batch them at the end. The HTML page is a status broadcast and
+reviewers expect it to reflect current reality within seconds of work
+landing.
+
+If you complete work that doesn't correspond to any existing ship task,
+either add the task first then mark it done, or ask the user whether to
+log it.
 
 ## What NOT to do
 
