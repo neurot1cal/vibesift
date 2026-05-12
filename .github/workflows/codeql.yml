@@ -10,15 +10,22 @@ on:
     # already-merged code.
     - cron: '17 9 * * 1'
 
+# Top-level grants only what every job needs (read the source). The
+# analyze job below elevates to write security-events for SARIF upload.
 permissions:
-  actions: read
   contents: read
-  security-events: write
 
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
+    permissions:
+      # actions: read lets CodeQL inspect the workflow run that built
+      # the analyzed code. security-events: write uploads SARIF results
+      # into the repo's code-scanning view.
+      actions: read
+      contents: read
+      security-events: write
     strategy:
       fail-fast: false
       matrix:
