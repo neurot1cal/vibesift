@@ -16,10 +16,17 @@ import {
 } from './git.js';
 import { install, listHarnesses } from './install.js';
 import { regenerateLandingIndex } from './index-renderer.js';
+import { scanRepo, constraintStubsFor, taskScaffoldFor, humanizeSlug, slugify } from './scan.js';
+import { openInBrowser } from './open.js';
+import { createInterface } from 'node:readline/promises';
 
 const HELP = `vibesift — Scope, Sift, Ship.
 
 Commands
+  vibesift propose [<slug>] [--title "..."] [--problem "..."] [--no-open] [--no-commit]
+                     (low-friction kickoff: scans the repo, seeds project-type
+                      constraints + a starter task list, opens the rendered
+                      page in your default browser)
   vibesift init <slug> --title "..." [--problem "..."] [--no-commit]
   vibesift scope <slug> add-constraint "..." [--no-commit]
   vibesift sift  <slug> add-option "..." [--no-commit]
@@ -561,6 +568,125 @@ function cmdIndex() {
   reportCommit(r, `index regenerated (${result.sessions.length} session${result.sessions.length === 1 ? '' : 's'})`);
 }
 
+// One-line interactive prompt. Returns the user's trimmed answer, or
+// `fallback` when stdin isn't a TTY (CI / agent flows). Caller is
+// responsible for ensuring `fallback` is a sane default.
+async function promptLine(question, fallback = '') {
+  if (!process.stdin.isTTY) return fallback;
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = await rl.question(question);
+    const trimmed = answer.trim();
+    return trimmed || fallback;
+  } finally {
+    rl.close();
+  }
+}
+
+// Ensure docs/sessions/ exists and docs/index.html has the bare landing so
+// the index regenerator has something to write into. Idempotent: if either
+// already exists, leaves them alone. Called from propose; bootstrap stays
+// the explicit one-time setup command for users who want the GitHub Pages
+// hint and the dirty-tree guard.
+function ensureBootstrapped(root) {
+  mkdirSync(join(root, 'docs', 'sessions'), { recursive: true });
+  const indexPath = join(root, 'docs', 'index.html');
+  try {
+    writeFileSync(indexPath, INDEX_TEMPLATE, { flag: 'wx' });
+  } catch (e) {
+    if (e.code !== 'EEXIST') throw e;
+  }
+}
+
+async function cmdPropose(argv) {
+  const { _: pos, flags } = parseArgs(argv);
+  const cwd = process.cwd();
+  const root = repoRoot(cwd);
+  if (!root) die('not in a git repository — run from inside the repo you want to track');
+
+  // Scan BEFORE bootstrap so we classify the repo as it actually is —
+  // otherwise the docs/index.html we'd be about to create would always
+  // mis-tag plain repos as `static`.
+  const scan = scanRepo(root);
+  ensureBootstrapped(root);
+
+  // Slug: positional, then --slug, then prompt, then die.
+  let slug = pos[0];
+  if (!slug && typeof flags.slug === 'string') slug = flags.slug;
+  if (!slug) {
+    const answer = await promptLine('What are you about to build? (short name): ', '');
+    slug = slugify(answer);
+  }
+  if (!slug || !SLUG_RE.test(slug)) {
+    die('slug required (lowercase, hyphenated, max 80 chars). usage: vibesift propose <slug> [--title "..."] [--problem "..."] [--no-open] [--no-commit]');
+  }
+
+  const path = sessionPath(slug, cwd);
+  if (existsSync(path)) {
+    process.stdout.write(`session already exists: ${path}\n`);
+    if (!flags['no-open']) openInBrowser(path);
+    return;
+  }
+
+  // Title: --title or prompt or humanized default.
+  let title;
+  if (typeof flags.title === 'string') {
+    title = flags.title;
+  } else {
+    const def = humanizeSlug(slug) || slug;
+    title = await promptLine(`Title (default: "${def}"): `, def);
+    if (!title) title = def;
+  }
+
+  // Problem: --problem (including explicit empty string) or prompt or empty.
+  let problem;
+  if (typeof flags.problem === 'string') {
+    problem = flags.problem;
+  } else {
+    problem = await promptLine('Problem (one sentence, blank to skip): ', '');
+  }
+
+  mkdirSync(join(sessionsDir(cwd), slug), { recursive: true });
+  const branch = currentBranch(cwd);
+  const repo = originUrl(cwd);
+  const state = emptyState({ slug, title, problem, branch, repo });
+
+  for (const c of constraintStubsFor(scan)) addConstraint(state, c);
+  for (const t of taskScaffoldFor(scan)) addTask(state, t);
+
+  writeFileSync(path, renderHTML(state));
+
+  const noCommit = !!flags['no-commit'];
+  if (noCommit) {
+    process.stderr.write('vibesift: --no-commit set, file written but not committed\n');
+  } else {
+    const result = autoCommit({
+      paths: [path],
+      message: `vibesift: propose ${slug}`,
+    });
+    reportCommit(result, `created ${path}`);
+    regenIndexAfterCommit(result);
+  }
+
+  if (!flags['no-open']) openInBrowser(path);
+
+  const taskCount = state.ship.tasks.length;
+  const constraintCount = state.scope.constraints.length;
+  const detected = scan.framework
+    ? `${scan.projectKind}/${scan.framework}`
+    : scan.projectKind;
+  process.stdout.write(`session: ${slug}\n`);
+  process.stdout.write(`title:   ${title}\n`);
+  process.stdout.write(`detected:${detected === 'unknown' ? ' unknown' : ' ' + detected}\n`);
+  process.stdout.write(`phase:   ${state.phase} (${constraintCount} constraint${constraintCount === 1 ? '' : 's'}, ${taskCount} task${taskCount === 1 ? '' : 's'})\n`);
+  process.stdout.write(`file:    docs/sessions/${slug}/index.html\n`);
+  if (scan.planFiles.length) {
+    const paths = scan.planFiles.map(f => f.path).join(', ');
+    process.stdout.write(`plan:    detected ${paths} (not auto-imported)\n`);
+  }
+  process.stdout.write(`next:    vibesift advance ${slug}\n`);
+}
+
 function cmdBootstrap(argv = []) {
   const root = repoRoot();
   if (!root) die('not in a git repository');
@@ -611,11 +737,12 @@ function cmdBootstrap(argv = []) {
   process.stdout.write(`Repo settings → Pages → Source: Deploy from branch → /docs\n`);
 }
 
-function main() {
+async function main() {
   const [cmd, ...rest] = process.argv.slice(2);
   if (!cmd || cmd === '-h' || cmd === '--help') { process.stdout.write(HELP); return; }
   switch (cmd) {
     case 'init': return cmdInit(rest);
+    case 'propose': return cmdPropose(rest);
     case 'scope': return cmdScope(rest);
     case 'sift': return cmdSift(rest);
     case 'ship': return cmdShip(rest);
@@ -633,4 +760,4 @@ function main() {
   }
 }
 
-main();
+main().catch(e => die(e && e.message ? e.message : String(e)));
