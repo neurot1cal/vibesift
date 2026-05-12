@@ -47,6 +47,70 @@ const phaseLabel = {
   ship: 'Ship',
 };
 
+// Compute the single next-action callout shown in the "What's next" hero.
+// Returns { phase, key, label, taskText? }. `phase` is used as a CSS hook so
+// the hero tint matches the current phase; `key` is exposed via
+// data-vibesift-next on the rendered element so future JS can hang off it
+// without touching the JSON state.
+function nextStep(state) {
+  if (state.deployedAt) {
+    return { phase: 'done', key: 'done', label: 'Session complete' };
+  }
+  if (state.ship && state.ship.shippedAt) {
+    return { phase: 'ship', key: 'deploy', label: 'Mark as deployed' };
+  }
+  if (state.phase === 'scope') {
+    if (state.scope.constraints.length === 0) {
+      return { phase: 'scope', key: 'scope.add-constraint', label: 'Add constraints' };
+    }
+    if (!state.scope.decision) {
+      return { phase: 'scope', key: 'scope.decide', label: 'Set the approach' };
+    }
+    return { phase: 'scope', key: 'scope.advance', label: 'Advance to sift' };
+  }
+  if (state.phase === 'sift') {
+    if (state.sift.options.length === 0) {
+      return { phase: 'sift', key: 'sift.add-option', label: 'Add options' };
+    }
+    if (!state.sift.decision) {
+      return { phase: 'sift', key: 'sift.decide', label: 'Pick an option' };
+    }
+    return { phase: 'sift', key: 'sift.advance', label: 'Advance to ship' };
+  }
+  // ship
+  const tasks = (state.ship && state.ship.tasks) || [];
+  const undone = tasks.find(t => !t.done);
+  if (undone) {
+    return {
+      phase: 'ship',
+      key: 'ship.task',
+      label: 'Next task',
+      taskText: undone.text,
+    };
+  }
+  if (tasks.length === 0) {
+    return { phase: 'ship', key: 'ship.add-task', label: 'Add ship tasks' };
+  }
+  return { phase: 'ship', key: 'ship.decide', label: 'Record the ship decision' };
+}
+
+function nextHero(state) {
+  const step = nextStep(state);
+  const phaseCls = `next-hero next-hero-${step.phase}`;
+  const detail = step.taskText
+    ? `<code class="next-task">[ ] ${escapeHtml(step.taskText)}</code>`
+    : `<span class="next-action">${escapeHtml(step.label)}</span>`;
+  // When the next step is a task, the label header reads "Next task" and the
+  // detail line carries the task text; otherwise the label header is the
+  // static "What's next" and the action carries the verb.
+  const headline = step.taskText ? step.label : "What's next";
+  return `
+    <section class="${phaseCls}" data-vibesift-next="${escapeHtml(step.key)}" aria-label="Next step">
+      <span class="next-label">${escapeHtml(headline)}</span>
+      ${detail}
+    </section>`;
+}
+
 function statusBadge(state) {
   if (state.ship.shippedAt) return { text: 'Shipped', tone: 'shipped' };
   const i = PHASES.indexOf(state.phase);
@@ -483,6 +547,51 @@ const STYLES = `
   }
   .toolbar button:hover { border-color: var(--accent); color: var(--text); }
   .copy-prompt.copied { color: var(--positive); border-color: var(--positive); }
+
+  /* "What's next" hero — sits above the pipeline graphic. One-line callout
+     pointing the user (or agent) at the single next action. Phase-tinted
+     left border so the eye lands here first. */
+  .next-hero {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    padding: 0.625rem 0.875rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+  }
+  .next-hero-scope { border-left-color: var(--accent); }
+  .next-hero-sift { border-left-color: var(--accent); }
+  .next-hero-ship { border-left-color: var(--positive); }
+  .next-hero-done { border-left-color: var(--positive); opacity: 0.75; }
+  .next-label {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    color: var(--text-faint);
+  }
+  .next-action {
+    color: var(--text);
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+  .next-task {
+    font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", monospace;
+    font-size: 0.875rem;
+    color: var(--text);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.1875rem 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
 `;
 
 // Inline JS — toggle dark/light + "copy as prompt" export button. Both
@@ -635,6 +744,7 @@ export function renderHTML(state) {
     <span class="meta">updated ${fmtDate(state.updatedAt)}</span>
   </div>
 </header>
+${nextHero(state)}
 <div class="pipeline" aria-label="Session lifecycle pipeline">${renderPipeline(state)}</div>
 <nav>${nav(state)}</nav>
 <main>
