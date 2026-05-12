@@ -548,6 +548,21 @@ const STYLES = `
   .toolbar button:hover { border-color: var(--accent); color: var(--text); }
   .copy-prompt.copied { color: var(--positive); border-color: var(--positive); }
 
+  /* Live auto-refresh indicator. Sits in the toolbar; clickable to pause.
+     Green when polling, neutral when paused. Matches the toolbar button
+     baseline so it lines up visually with copy-prompt and theme-toggle. */
+  .live-pill {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-faint);
+    font: 0.75rem ui-monospace, SFMono-Regular, monospace;
+    padding: 0.375rem 0.625rem;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+  }
+  .live-pill.live-on { color: var(--positive); border-color: var(--positive); }
+
   /* "What's next" hero — sits above the pipeline graphic. One-line callout
      pointing the user (or agent) at the single next action. Phase-tinted
      left border so the eye lands here first. */
@@ -701,6 +716,65 @@ const THEME_SCRIPT = `
 })();
 `;
 
+// Live auto-refresh. Polls the page URL every 3s, parses the embedded
+// state block out of the response, and reloads the page when updatedAt
+// changes. Off-by-toggle via localStorage["vibesift:live"]. Default: on.
+// Silent on file:// (fetch may be blocked). Stays inside the zero-runtime-
+// deps promise: no SSE, no WebSocket, no framework. The close tag for the
+// embedded state block is built by string concatenation so the literal
+// `</script>` never appears inside this script body.
+const LIVE_POLL_SCRIPT = `
+(function(){
+  var KEY = 'vibesift:live';
+  var INTERVAL = 3000;
+  var stateEl = document.getElementById('vibesift-state');
+  if (!stateEl) return;
+  var lastSeen;
+  try { lastSeen = JSON.parse(stateEl.textContent).updatedAt; } catch(e) { return; }
+  var pill = document.getElementById('live-indicator');
+  var enabled = true;
+  try {
+    var saved = localStorage.getItem(KEY);
+    if (saved === 'off') enabled = false;
+  } catch(e) {}
+  function paint(){
+    if (!pill) return;
+    pill.textContent = enabled ? '● LIVE' : '○ PAUSED';
+    pill.classList.toggle('live-on', enabled);
+  }
+  paint();
+  if (pill) {
+    pill.addEventListener('click', function(){
+      enabled = !enabled;
+      try { localStorage.setItem(KEY, enabled ? 'on' : 'off'); } catch(e) {}
+      paint();
+    });
+  }
+  var OPEN_TAG = '<' + 'script type="application/json" id="vibesift-state">';
+  var CLOSE_TAG = '<' + '/script>';
+  function tick(){
+    if (!enabled) return;
+    fetch(window.location.pathname + '?_=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ return r.ok ? r.text() : null; })
+      .then(function(html){
+        if (!html) return;
+        var s = html.indexOf(OPEN_TAG);
+        if (s < 0) return;
+        var e = html.indexOf(CLOSE_TAG, s);
+        if (e < 0) return;
+        var raw = html.slice(s + OPEN_TAG.length, e);
+        var nextState;
+        try { nextState = JSON.parse(raw); } catch(err) { return; }
+        if (nextState.updatedAt && nextState.updatedAt !== lastSeen) {
+          window.location.reload();
+        }
+      })
+      .catch(function(){});
+  }
+  setInterval(tick, INTERVAL);
+})();
+`;
+
 export function renderHTML(state) {
   const badge = statusBadge(state);
   const branchLine = state.branch
@@ -732,6 +806,7 @@ export function renderHTML(state) {
 <body>
 <header>
   <div class="toolbar">
+    <button id="live-indicator" class="live-pill" type="button" aria-label="Toggle live auto-refresh">● LIVE</button>
     <button id="copy-prompt" class="copy-prompt" type="button" aria-label="Copy this session as a prompt to paste into Claude">⎘ COPY AS PROMPT</button>
     <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">◐ DARK</button>
   </div>
@@ -758,6 +833,7 @@ ${decisionsLog(state)}
 ${safeJson}
 </script>
 <script>${THEME_SCRIPT}</script>
+<script>${LIVE_POLL_SCRIPT}</script>
 </body>
 </html>
 `;

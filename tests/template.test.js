@@ -222,6 +222,46 @@ test('toolbar contains both theme-toggle and copy-prompt buttons', () => {
   assert.match(html, /<button id="theme-toggle"[^>]*>◐ DARK<\/button>/);
 });
 
+test('toolbar contains the live auto-refresh pill', () => {
+  const s = emptyState({ slug: 'p', title: 'P' });
+  const html = renderHTML(s);
+  assert.match(html, /<button id="live-indicator"[^>]*>● LIVE<\/button>/);
+  assert.match(html, /aria-label="Toggle live auto-refresh"/);
+});
+
+test('rendered page embeds the live-poll script', () => {
+  const s = emptyState({ slug: 'p', title: 'P' });
+  const html = renderHTML(s);
+  // The poll loop should be present.
+  assert.match(html, /setInterval\(tick, INTERVAL\)/);
+  // It must read updatedAt from the embedded state, not from a global.
+  assert.match(html, /JSON\.parse\(stateEl\.textContent\)\.updatedAt/);
+  // It must reload only when updatedAt changes (no eager reload loop).
+  assert.match(html, /nextState\.updatedAt !== lastSeen/);
+  // localStorage key matches the theme-toggle convention.
+  assert.match(html, /'vibesift:live'/);
+});
+
+test('live-poll script does not contain a literal </script> tag', () => {
+  // Critical: the poll script references the embedded state block's open
+  // and close tags by string concatenation so that no literal `</script>`
+  // appears inside the script body. A literal would terminate the script
+  // early in browsers (which use a permissive HTML parser, not a JS one).
+  const s = emptyState({ slug: 'p', title: 'P' });
+  const html = renderHTML(s);
+  // Find the LIVE poll script block and inspect only its contents.
+  const startMarker = 'setInterval(tick, INTERVAL)';
+  const idx = html.indexOf(startMarker);
+  assert.ok(idx > 0, 'expected to find live-poll script');
+  // Walk back to the enclosing <script> open tag.
+  const openIdx = html.lastIndexOf('<script>', idx);
+  const closeIdx = html.indexOf('</script>', idx);
+  assert.ok(openIdx > 0 && closeIdx > idx, 'malformed live-poll script tag');
+  const scriptBody = html.slice(openIdx + '<script>'.length, closeIdx);
+  // Body must not contain the literal close tag.
+  assert.equal(scriptBody.indexOf('</script>'), -1, 'live-poll script body must not contain a literal </script>');
+});
+
 test('copy-prompt button has aria-label for screen readers', () => {
   const s = emptyState({ slug: 'p', title: 'P' });
   const html = renderHTML(s);
