@@ -1,4 +1,4 @@
-// Markdown parsers for `import-plan`. Pure functions of strings — no fs, no
+// Markdown parsers for `import-plan`. Pure functions of strings: no fs, no
 // regexes with catastrophic backtracking, no runtime deps. Two entry points:
 //
 //   parsePRD(text)        → { problem, goals, nonGoals }

@@ -36,8 +36,8 @@ export function loadPlan({ planDir, repoRoot }) {
     found: { prdName, bpName },
   };
 
-  // Paths embedded in state are stored relative to repoRoot when possible —
-  // that's the unit the rendered HTML can link back to safely.
+  // Paths embedded in state are stored relative to repoRoot when possible,
+  // since that's the unit the rendered HTML can link back to safely.
   const rel = abs => {
     if (!repoRoot) return abs;
     const r = relative(repoRoot, abs);
