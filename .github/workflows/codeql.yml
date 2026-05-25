@@ -1,13 +1,13 @@
 name: CodeQL
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
   schedule:
     # Weekly Monday morning scan to catch newly-disclosed CVEs against the
-    # already-merged code.
+    # already-merged code. The per-push trigger was dropped: a PR scans every
+    # change before merge, and this weekly cron re-scans the merged code, so
+    # per-push was a near-duplicate run on every commit.
     - cron: '17 9 * * 1'
 
 # Top-level grants only what every job needs (read the source). The

@@ -18,7 +18,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        # Everyday CI: Ubuntu (POSIX smoke) + Windows (pwsh smoke, the
+        # path-handling coverage that actually catches CLI bugs) across the
+        # min and latest supported Node. macOS is dropped from per-push/PR
+        # runs — it meters at 10x and rarely surfaces a bug the other two
+        # don't — and runs only at release time, where release.yml gates
+        # `npm publish` on the full 3-OS x 2-Node matrix.
+        os: [ubuntu-latest, windows-latest]
         node: ['20', '22']
     steps:
       # actions/checkout@v6.0.0
