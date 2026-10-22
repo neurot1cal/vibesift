@@ -22,12 +22,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        node: ['20', '22']
+        # Node 20 is retained only for the declared >=20 compatibility contract.
+        # Packaging and publishing use patched Node 24 below.
+        node: ['20', '22.23.4', '24.22.1']
     steps:
-      # actions/checkout@v6.0.0
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      # actions/setup-node@v6.4.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+      # actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      # actions/setup-node@v7.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: ${{ matrix.node }}
       - name: Run tests
@@ -41,16 +43,16 @@ jobs:
       # Required for SLSA L3 provenance via `npm publish --provenance`.
       id-token: write
     steps:
-      # actions/checkout@v6.0.0
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      # actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           # Tag-version-match guard reads the tag; need its full ref.
           fetch-depth: 0
 
-      # actions/setup-node@v6.4.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+      # actions/setup-node@v7.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: '20'
+          node-version: '24.22.1'
           registry-url: 'https://registry.npmjs.org'
 
       # Supply-chain guard #1: refuse to publish if the git tag and the
@@ -118,10 +120,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      # actions/checkout@v6.0.0
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      # actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Create GitHub Release
-        # softprops/action-gh-release@v3.0.0
-        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda
+        # softprops/action-gh-release@v3.0.3
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64
         with:
           generate_release_notes: true
