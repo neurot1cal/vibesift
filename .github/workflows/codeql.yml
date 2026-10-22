@@ -33,17 +33,17 @@ jobs:
 
     steps:
       - name: Checkout
-        # actions/checkout@v6.0.0
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        # actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Initialize CodeQL
-        # github/codeql-action@v3.35.4
-        uses: github/codeql-action/init@9e0d7b8d25671d64c341c19c0152d693099fb5ba
+        # github/codeql-action@v4.39.1
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
         with:
           languages: ${{ matrix.language }}
           queries: security-extended
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@9e0d7b8d25671d64c341c19c0152d693099fb5ba
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
         with:
           category: '/language:${{ matrix.language }}'

@@ -20,17 +20,20 @@ jobs:
       matrix:
         # Everyday CI: Ubuntu (POSIX smoke) + Windows (pwsh smoke, the
         # path-handling coverage that actually catches CLI bugs) across the
-        # min and latest supported Node. macOS is dropped from per-push/PR
+        # declared minimum and patched LTS Node versions. macOS is dropped from
+        # per-push/PR
         # runs — it meters at 10x and rarely surfaces a bug the other two
         # don't — and runs only at release time, where release.yml gates
-        # `npm publish` on the full 3-OS x 2-Node matrix.
+        # `npm publish` on the full 3-OS x 3-Node matrix.
         os: [ubuntu-latest, windows-latest]
-        node: ['20', '22']
+        # Node 20 is retained only for the declared >=20 compatibility contract.
+        # Packaging and publishing use patched Node 24.
+        node: ['20', '22.23.4', '24.22.1']
     steps:
-      # actions/checkout@v6.0.0
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      # actions/setup-node@v6.4.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+      # actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      # actions/setup-node@v7.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: ${{ matrix.node }}
       - name: Show versions
@@ -58,7 +61,7 @@ jobs:
           node "$GITHUB_WORKSPACE/src/cli.js" decide smoke --phase sift --text "option A"
           node "$GITHUB_WORKSPACE/src/cli.js" advance smoke
           node "$GITHUB_WORKSPACE/src/cli.js" ship smoke task add "first task"
-          node "$GITHUB_WORKSPACE/src/cli.js" ship smoke task done 1
+          node "$GITHUB_WORKSPACE/src/cli.js" ship smoke task "done" 1
           node "$GITHUB_WORKSPACE/src/cli.js" status smoke
           test -s docs/sessions/smoke/index.html
       - name: Smoke test (Windows)
